@@ -65,7 +65,26 @@ const isFirebaseConfigured = Boolean(
 const firebaseApp = isFirebaseConfigured ? initializeApp(firebaseConfig) : null;
 const auth = firebaseApp ? getAuth(firebaseApp) : null;
 const googleProvider = firebaseApp ? new GoogleAuthProvider() : null;
+if (googleProvider) {
+  googleProvider.setCustomParameters({
+    prompt: "select_account",
+  });
+}
+
 const db = firebaseApp ? getFirestore(firebaseApp) : null;
+
+const ADMIN_EMAILS = [
+  "feeljoa777@gmail.com",
+  "feeljoa77@naver.com",
+].map((email) => email.toLowerCase());
+
+function getResolvedRole(email, savedRole = "student") {
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  if (normalizedEmail && ADMIN_EMAILS.includes(normalizedEmail)) return "admin";
+  if (savedRole === "admin") return "admin";
+  return "student";
+}
+
 
 const navItems = [
   { id: "home", labelKey: "home", icon: Home },
@@ -453,12 +472,9 @@ function manualTranslateText(text, language) {
 
 function applyManualTranslation(language) {
   if (typeof document === "undefined") return;
-
   const root = document.body;
   if (!root) return;
-
   const skipTags = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "TEXTAREA"]);
-
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
     acceptNode(node) {
       const parent = node.parentElement;
@@ -468,57 +484,19 @@ function applyManualTranslation(language) {
       return NodeFilter.FILTER_ACCEPT;
     },
   });
-
   const textNodes = [];
   while (walker.nextNode()) textNodes.push(walker.currentNode);
-
   textNodes.forEach((node) => {
-    const currentText = node.nodeValue;
-    const storedOriginal = node.__koOriginalText;
-
-    const storedTranslated = storedOriginal
-      ? manualTranslateText(storedOriginal, language)
-      : null;
-
-    const reactChangedText =
-      !storedOriginal ||
-      (currentText !== storedOriginal && currentText !== storedTranslated);
-
-    const normalizedOriginal = normalizeToKoreanText(
-      reactChangedText ? currentText : storedOriginal
-    );
-
+    const normalizedOriginal = normalizeToKoreanText(node.__koOriginalText || node.nodeValue);
     node.__koOriginalText = normalizedOriginal;
-
     const nextText = manualTranslateText(normalizedOriginal, language);
-
-    if (node.nodeValue !== nextText) {
-      node.nodeValue = nextText;
-    }
+    if (node.nodeValue !== nextText) node.nodeValue = nextText;
   });
-
   document.querySelectorAll("input[placeholder], textarea[placeholder]").forEach((element) => {
-    const currentPlaceholder = element.getAttribute("placeholder") || "";
-    const storedPlaceholder = element.dataset.koPlaceholder || "";
-    const storedTranslated = storedPlaceholder
-      ? manualTranslateText(storedPlaceholder, language)
-      : "";
-
-    const reactChangedPlaceholder =
-      !storedPlaceholder ||
-      (currentPlaceholder !== storedPlaceholder && currentPlaceholder !== storedTranslated);
-
-    const normalizedPlaceholder = normalizeToKoreanText(
-      reactChangedPlaceholder ? currentPlaceholder : storedPlaceholder
-    );
-
+    const normalizedPlaceholder = normalizeToKoreanText(element.dataset.koPlaceholder || element.getAttribute("placeholder") || "");
     element.dataset.koPlaceholder = normalizedPlaceholder;
-
     const nextPlaceholder = manualTranslateText(normalizedPlaceholder, language);
-
-    if (element.getAttribute("placeholder") !== nextPlaceholder) {
-      element.setAttribute("placeholder", nextPlaceholder);
-    }
+    if (element.getAttribute("placeholder") !== nextPlaceholder) element.setAttribute("placeholder", nextPlaceholder);
   });
 }
 
@@ -1080,11 +1058,15 @@ export default function App() {
         uid: user.uid,
         email: user.email || "",
         name: user.displayName || "학생 이름",
-        role: "student",
+        role: getResolvedRole(user.email, "student"),
       };
       if (snapshot.exists()) {
         const saved = snapshot.data();
-        const nextProfile = { ...baseProfile, ...saved.profile };
+        const nextProfile = {
+          ...baseProfile,
+          ...saved.profile,
+          role: getResolvedRole(user.email, saved.profile?.role || baseProfile.role),
+        };
         setStudentProfile(nextProfile);
         localStorage.setItem("functionExplorerStudentProfile", JSON.stringify(nextProfile));
         const savedProgress = saved.progress || {};
@@ -1146,7 +1128,7 @@ export default function App() {
           uid: authUser.uid,
           email: authUser.email || "",
           name: studentName,
-          role: studentProfile.role || "student",
+          role: getResolvedRole(authUser.email, studentProfile.role),
         },
         progress: {
           currentGrade: grade,
@@ -1265,18 +1247,62 @@ function AuthScreen({ onLoginSuccess, onGuestLogin }) {
 
   const saveProfile = async (user, extra = {}) => {
     if (!user) return;
+
     const shouldResetProgress = !!extra.resetProgress;
-    const profile = {
-      uid: user.uid,
-      email: user.email || email,
-      name: extra.name || user.displayName || name || "학생 이름",
-      grade: extra.grade || selectedGrade || "",
-      className: extra.className || className || "",
-      studentNumber: extra.studentNumber || studentNumber || "",
-      role: "student",
+
+    let existingProfile = {};
+
+    if (db) {
+      const userRef = doc(db, "users", user.uid);
+      const snapshot = await getDoc(userRef);
+
+      if (snapshot.exists()) {
+        existingProfile = snapshot.data()?.profile || {};
+      }
+    }
+
+    const keepOrNew = (newValue, oldValue, fallback = "") => {
+      if (
+        newValue !== undefined &&
+        newValue !== null &&
+        String(newValue).trim() !== ""
+      ) {
+        return newValue;
+      }
+
+      if (oldValue !== undefined && oldValue !== null) {
+        return oldValue;
+      }
+
+      return fallback;
     };
+
+    const profile = {
+      ...existingProfile,
+      uid: user.uid,
+      email: user.email || email || existingProfile.email || "",
+      name: keepOrNew(
+        extra.name || user.displayName || name,
+        existingProfile.name,
+        "학생 이름"
+      ),
+      grade: keepOrNew(extra.grade || selectedGrade, existingProfile.grade, ""),
+      className: keepOrNew(
+        extra.className || className,
+        existingProfile.className,
+        ""
+      ),
+      studentNumber: keepOrNew(
+        extra.studentNumber || studentNumber,
+        existingProfile.studentNumber,
+        ""
+      ),
+      role: getResolvedRole(user.email || existingProfile.email, existingProfile.role),
+    };
+
     localStorage.setItem("functionExplorerStudentProfile", JSON.stringify(profile));
     localStorage.setItem("functionExplorerStudentName", profile.name);
+
     if (shouldResetProgress) {
       localStorage.setItem("functionExplorer:" + user.uid + ":points", "0");
       localStorage.setItem("functionExplorer:" + user.uid + ":missionCompleted", JSON.stringify({}));
@@ -1285,13 +1311,15 @@ function AuthScreen({ onLoginSuccess, onGuestLogin }) {
       localStorage.removeItem("functionExplorerMissionCompleted");
       localStorage.removeItem("functionExplorerGraphReflections");
     }
+
     if (db) {
       const payload = {
         profile,
-        createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
+
       if (shouldResetProgress) {
+        payload.createdAt = serverTimestamp();
         payload.progress = {
           currentGrade: profile.grade || "middle1",
           points: 0,
@@ -1305,8 +1333,10 @@ function AuthScreen({ onLoginSuccess, onGuestLogin }) {
           middle3: {},
         };
       }
+
       await setDoc(doc(db, "users", user.uid), payload, { merge: true });
     }
+
     onLoginSuccess({ ...profile, __resetProgress: shouldResetProgress });
   };
 
@@ -1353,6 +1383,7 @@ function AuthScreen({ onLoginSuccess, onGuestLogin }) {
     setLoading(true);
     setMessage("");
     try {
+      await signOut(auth).catch(() => {});
       const credential = await signInWithPopup(auth, googleProvider);
       await saveProfile(credential.user, { name: credential.user.displayName || "학생 이름" });
     } catch (error) {
