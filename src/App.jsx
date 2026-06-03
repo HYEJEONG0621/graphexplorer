@@ -462,9 +462,16 @@ function manualTranslateText(text, language) {
 
 function applyManualTranslation(language) {
   if (typeof document === "undefined") return;
+
+  // 한국어 화면에서는 DOM을 직접 번역하지 않습니다.
+  // React가 학년 변경으로 새 제목/카드를 그린 뒤, 번역기가 예전 텍스트로 되돌리는 문제를 막기 위한 처리입니다.
+  if (language === "ko") return;
+
   const root = document.body;
   if (!root) return;
+
   const skipTags = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "TEXTAREA"]);
+
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
     acceptNode(node) {
       const parent = node.parentElement;
@@ -474,19 +481,52 @@ function applyManualTranslation(language) {
       return NodeFilter.FILTER_ACCEPT;
     },
   });
+
   const textNodes = [];
   while (walker.nextNode()) textNodes.push(walker.currentNode);
+
   textNodes.forEach((node) => {
-    const normalizedOriginal = normalizeToKoreanText(node.__koOriginalText || node.nodeValue);
+    const currentText = node.nodeValue;
+    const storedOriginal = node.__koOriginalText;
+    const storedTranslated = storedOriginal ? manualTranslateText(storedOriginal, language) : null;
+
+    const reactChangedText =
+      !storedOriginal ||
+      (currentText !== storedOriginal && currentText !== storedTranslated);
+
+    const normalizedOriginal = normalizeToKoreanText(
+      reactChangedText ? currentText : storedOriginal
+    );
+
     node.__koOriginalText = normalizedOriginal;
     const nextText = manualTranslateText(normalizedOriginal, language);
-    if (node.nodeValue !== nextText) node.nodeValue = nextText;
+
+    if (node.nodeValue !== nextText) {
+      node.nodeValue = nextText;
+    }
   });
+
   document.querySelectorAll("input[placeholder], textarea[placeholder]").forEach((element) => {
-    const normalizedPlaceholder = normalizeToKoreanText(element.dataset.koPlaceholder || element.getAttribute("placeholder") || "");
+    const currentPlaceholder = element.getAttribute("placeholder") || "";
+    const storedPlaceholder = element.dataset.koPlaceholder || "";
+    const storedTranslated = storedPlaceholder
+      ? manualTranslateText(storedPlaceholder, language)
+      : "";
+
+    const reactChangedPlaceholder =
+      !storedPlaceholder ||
+      (currentPlaceholder !== storedPlaceholder && currentPlaceholder !== storedTranslated);
+
+    const normalizedPlaceholder = normalizeToKoreanText(
+      reactChangedPlaceholder ? currentPlaceholder : storedPlaceholder
+    );
+
     element.dataset.koPlaceholder = normalizedPlaceholder;
     const nextPlaceholder = manualTranslateText(normalizedPlaceholder, language);
-    if (element.getAttribute("placeholder") !== nextPlaceholder) element.setAttribute("placeholder", nextPlaceholder);
+
+    if (element.getAttribute("placeholder") !== nextPlaceholder) {
+      element.setAttribute("placeholder", nextPlaceholder);
+    }
   });
 }
 
@@ -985,6 +1025,10 @@ export default function App() {
   }, [language]);
 
   useEffect(() => {
+    // 한국어 화면에서는 React 화면을 그대로 사용합니다.
+    // DOM 직접 번역을 켜면 학년 전환 시 제목과 과제 카드가 예전 텍스트로 되돌아갈 수 있습니다.
+    if (language === "ko") return undefined;
+
     const run = () => applyManualTranslation(language);
     const frame = requestAnimationFrame(run);
     const observer = new MutationObserver(() => requestAnimationFrame(run));
