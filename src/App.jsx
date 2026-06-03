@@ -1188,12 +1188,12 @@ export default function App() {
   }
 
   return (
-    <div className="h-screen overflow-hidden bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100 text-slate-800">
-      <div className="mx-auto flex h-full max-w-[1500px] gap-3 overflow-hidden p-3">
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100 text-slate-800">
+      <div className="mx-auto flex min-h-screen max-w-[1500px] gap-3 p-3">
         <Sidebar active={active} setActive={setActive} studentName={studentName} language={language} isAdmin={studentProfile.role === "admin"} />
-        <main className="flex h-full min-w-0 flex-1 flex-col gap-3 overflow-hidden">
+        <main className="flex min-h-screen min-w-0 flex-1 flex-col gap-3">
           <Header activeTitle={activeTitle} setActive={setActive} expPoints={expPoints} grade={grade} setGrade={setGrade} studentName={studentName} onLogout={handleLogout} isGuest={guestMode} language={language} />
-          <motion.section className="min-h-0 flex-1 overflow-hidden" key={active} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
+          <motion.section className="min-h-0 flex-1 overflow-y-auto" key={active} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
             {active === "home" && (grade === "middle1" ? <HomeScreen setActive={setActive} expPoints={expPoints} isMissionComplete={isMissionComplete} /> : <GradeExtensionHome grade={grade} setActive={setActive} expPoints={expPoints} isMissionComplete={isMissionComplete} />)}
             {active === "ai" && <FunctionGraphAssistant />}
             {active === "ready" && (grade === "middle1" ? <ReadyScreen setActive={setActive} completeMission={completeMission} isMissionComplete={isMissionComplete} /> : <GradeExtensionReady grade={grade} setActive={setActive} completeMission={completeMission} isMissionComplete={isMissionComplete} />)}
