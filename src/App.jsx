@@ -463,9 +463,7 @@ function manualTranslateText(text, language) {
 function applyManualTranslation(language) {
   if (typeof document === "undefined") return;
 
-  // 한국어 화면에서는 DOM을 직접 번역하지 않습니다.
-  // React가 학년 변경으로 새 제목/카드를 그린 뒤, 번역기가 예전 텍스트로 되돌리는 문제를 막기 위한 처리입니다.
-  if (language === "ko") return;
+  // 한국어로 돌아올 때도 DOM에 남아 있는 번역 문구를 다시 한국어 원문으로 복원합니다.
 
   const root = document.body;
   if (!root) return;
@@ -1025,10 +1023,8 @@ export default function App() {
   }, [language]);
 
   useEffect(() => {
-    // 한국어 화면에서는 React 화면을 그대로 사용합니다.
-    // DOM 직접 번역을 켜면 학년 전환 시 제목과 과제 카드가 예전 텍스트로 되돌아갈 수 있습니다.
-    if (language === "ko") return undefined;
-
+    // 언어가 바뀔 때마다 현재 DOM을 선택 언어로 다시 정리합니다.
+    // 특히 한국어로 돌아올 때 이전 중국어/일본어/영어 문구가 상단 제목에 남는 문제를 막습니다.
     const run = () => applyManualTranslation(language);
     const frame = requestAnimationFrame(run);
     const observer = new MutationObserver(() => requestAnimationFrame(run));
@@ -1254,7 +1250,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100 text-slate-800">
+    <div key={`app-shell-${language}`} className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100 text-slate-800">
       <div className="mx-auto flex min-h-screen max-w-[1500px] gap-3 p-3">
         <Sidebar active={active} setActive={setActive} studentName={studentName} language={language} isAdmin={studentProfile.role === "admin"} />
         <main className="flex min-h-screen min-w-0 flex-1 flex-col gap-3">
