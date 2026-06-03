@@ -472,9 +472,12 @@ function manualTranslateText(text, language) {
 
 function applyManualTranslation(language) {
   if (typeof document === "undefined") return;
+
   const root = document.body;
   if (!root) return;
+
   const skipTags = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "TEXTAREA"]);
+
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
     acceptNode(node) {
       const parent = node.parentElement;
@@ -484,19 +487,28 @@ function applyManualTranslation(language) {
       return NodeFilter.FILTER_ACCEPT;
     },
   });
+
   const textNodes = [];
   while (walker.nextNode()) textNodes.push(walker.currentNode);
+
   textNodes.forEach((node) => {
-    const normalizedOriginal = normalizeToKoreanText(node.__koOriginalText || node.nodeValue);
-    node.__koOriginalText = normalizedOriginal;
-    const nextText = manualTranslateText(normalizedOriginal, language);
-    if (node.nodeValue !== nextText) node.nodeValue = nextText;
+    const currentText = node.nodeValue;
+    const koreanText = normalizeToKoreanText(currentText);
+    const nextText = language === "ko" ? koreanText : manualTranslateText(koreanText, language);
+
+    if (node.nodeValue !== nextText) {
+      node.nodeValue = nextText;
+    }
   });
+
   document.querySelectorAll("input[placeholder], textarea[placeholder]").forEach((element) => {
-    const normalizedPlaceholder = normalizeToKoreanText(element.dataset.koPlaceholder || element.getAttribute("placeholder") || "");
-    element.dataset.koPlaceholder = normalizedPlaceholder;
-    const nextPlaceholder = manualTranslateText(normalizedPlaceholder, language);
-    if (element.getAttribute("placeholder") !== nextPlaceholder) element.setAttribute("placeholder", nextPlaceholder);
+    const currentPlaceholder = element.getAttribute("placeholder") || "";
+    const koreanPlaceholder = normalizeToKoreanText(currentPlaceholder);
+    const nextPlaceholder = language === "ko" ? koreanPlaceholder : manualTranslateText(koreanPlaceholder, language);
+
+    if (element.getAttribute("placeholder") !== nextPlaceholder) {
+      element.setAttribute("placeholder", nextPlaceholder);
+    }
   });
 }
 
@@ -1249,7 +1261,6 @@ function AuthScreen({ onLoginSuccess, onGuestLogin }) {
     if (!user) return;
 
     const shouldResetProgress = !!extra.resetProgress;
-
     let existingProfile = {};
 
     if (db) {
@@ -1425,77 +1436,165 @@ function AuthScreen({ onLoginSuccess, onGuestLogin }) {
   };
 
   return (
-    <div className="grid min-h-screen place-items-center bg-gradient-to-br from-purple-50 via-white to-blue-50 p-4 text-slate-800">
-      <div className="w-full max-w-[430px] rounded-[2rem] border border-purple-200 bg-gradient-to-br from-white via-purple-50 to-blue-50 p-8 shadow-xl">
-        <div className="text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-purple-50 text-4xl">📚</div>
-          <h1 className="mt-4 text-2xl font-black text-blue-950">그래프탐험대</h1>
-          <p className="mt-1 text-sm font-bold text-slate-500">AI 기반 함수 그래프 학습 플래너</p>
-        </div>
-
-        <div className="mt-6 space-y-3">
-          {mode === "signup" && (
-            <>
-              <button
-                onClick={() => { setMode("login"); setMessage(""); }}
-                className="mb-2 rounded-2xl border border-purple-200 bg-white px-4 py-2 text-sm font-black text-purple-700 hover:bg-purple-50"
-              >
-                ← 로그인으로
-              </button>
-              <label className="block text-sm font-black text-slate-600">이름/닉네임</label>
-              <input value={name} onChange={(e) => setName(e.target.value)} className="w-full rounded-2xl border border-purple-100 px-4 py-3 font-bold outline-none focus:border-purple-400" placeholder="예) 김지우" />
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-black text-slate-600">반</label>
-                  <input value={className} onChange={(e) => setClassName(e.target.value)} className="w-full rounded-2xl border border-purple-100 px-4 py-3 font-bold outline-none focus:border-purple-400" placeholder="예) 5반" />
-                </div>
-                <div>
-                  <label className="block text-sm font-black text-slate-600">번호</label>
-                  <input value={studentNumber} onChange={(e) => setStudentNumber(e.target.value.replace(/[^0-9]/g, ""))} className="w-full rounded-2xl border border-purple-100 px-4 py-3 font-bold outline-none focus:border-purple-400" placeholder="예) 12" />
-                </div>
-              </div>
-            </>
-          )}
-          <label className="block text-sm font-black text-slate-600">이메일</label>
-          <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" className="w-full rounded-2xl border border-purple-100 px-4 py-3 font-bold outline-none focus:border-purple-400" placeholder="email@example.com" />
-          <label className="block text-sm font-black text-slate-600">비밀번호</label>
-          <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" className="w-full rounded-2xl border border-purple-100 px-4 py-3 font-bold outline-none focus:border-purple-400" placeholder={mode === "signup" ? "6자 이상" : "비밀번호를 입력하세요"} />
-          {mode === "signup" && (
-            <>
-              <label className="block text-sm font-black text-slate-600">학년</label>
-              <select value={selectedGrade} onChange={(e) => setSelectedGrade(e.target.value)} className="w-full rounded-2xl border border-purple-100 bg-white px-4 py-3 font-bold text-slate-700 outline-none focus:border-purple-400">
-                <option value="">선택</option>
-                <option value="middle1">중1</option>
-                <option value="middle2">중2</option>
-                <option value="middle3">중3</option>
-              </select>
-            </>
-          )}
-          <button onClick={handleEmailAuth} disabled={loading} className="w-full rounded-2xl bg-purple-600 px-5 py-3 font-black text-white shadow-lg shadow-purple-100 disabled:opacity-50">
-            {loading ? "처리 중..." : mode === "signup" ? "Firebase 회원가입" : "이메일로 로그인"}
-          </button>
-        </div>
-
-        {mode === "login" && (
-          <>
-            <div className="my-5 flex items-center gap-3 text-xs font-bold text-slate-400"><div className="h-px flex-1 bg-purple-100" />또는<div className="h-px flex-1 bg-purple-100" /></div>
-            <button onClick={handleGoogleLogin} disabled={loading} className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 font-black text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50">🔐 Google로 로그인</button>
-            <button onClick={onGuestLogin} disabled={loading} className="mt-3 w-full rounded-2xl border border-blue-200 bg-blue-50 px-5 py-3 font-black text-blue-700 shadow-sm hover:bg-blue-100 disabled:opacity-50">👀 비회원으로 둘러보기</button>
-            <p className="mt-2 text-center text-xs font-bold leading-relaxed text-slate-500">비회원은 포인트와 성장기록이 저장되지 않습니다.</p>
-          </>
-        )}
-
-        {message && <div className="mt-4 rounded-2xl bg-amber-50 px-4 py-3 text-xs font-bold leading-relaxed text-amber-800">{message}</div>}
-
-        {mode === "login" && (
-          <div className="mt-6 flex justify-center gap-3">
-            <button onClick={() => { setMode("signup"); setMessage(""); }} className="rounded-2xl border border-purple-200 bg-white px-4 py-2 text-sm font-black text-purple-700 hover:bg-purple-50">
-              회원가입
-            </button>
-            <button onClick={handlePasswordReset} className="rounded-2xl border border-purple-200 bg-white px-4 py-2 text-sm font-black text-purple-700 hover:bg-purple-50">비밀번호 찾기</button>
+    <div className="min-h-screen overflow-y-auto bg-gradient-to-br from-slate-50 via-purple-50 to-blue-50 px-5 py-8 text-slate-800">
+      <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-6xl items-center justify-center">
+        <div className="relative w-full overflow-hidden rounded-[2.2rem] border border-purple-100 bg-white/90 p-6 shadow-[0_24px_60px_rgba(15,23,42,0.10)] backdrop-blur md:p-9 lg:p-12">
+          <div className="pointer-events-none absolute right-8 top-8 hidden h-52 w-72 opacity-40 md:block">
+            <svg viewBox="0 0 320 220" className="h-full w-full">
+              <defs>
+                <linearGradient id="loginGraphGradient" x1="0" x2="1" y1="0" y2="1">
+                  <stop offset="0%" stopColor="#a78bfa" stopOpacity="0.35" />
+                  <stop offset="100%" stopColor="#60a5fa" stopOpacity="0.25" />
+                </linearGradient>
+              </defs>
+              {Array.from({ length: 9 }).map((_, index) => (
+                <line key={`v-${index}`} x1={20 + index * 32} y1="18" x2={index * 32 - 38} y2="198" stroke="#c4b5fd" strokeWidth="1" opacity="0.45" />
+              ))}
+              {Array.from({ length: 7 }).map((_, index) => (
+                <line key={`h-${index}`} x1="18" y1={35 + index * 25} x2="292" y2={index * 25 - 4} stroke="#c4b5fd" strokeWidth="1" opacity="0.45" />
+              ))}
+              <path d="M65 145 C105 145, 105 55, 150 55 C195 55, 185 160, 242 160" fill="none" stroke="url(#loginGraphGradient)" strokeWidth="5" strokeLinecap="round" />
+              <text x="206" y="60" fill="#a78bfa" fontSize="15" fontWeight="800">f(x)</text>
+              <text x="280" y="150" fill="#a78bfa" fontSize="14" fontWeight="800">x</text>
+              <text x="97" y="28" fill="#a78bfa" fontSize="14" fontWeight="800">y</text>
+              <rect x="226" y="72" width="54" height="54" fill="none" stroke="#c4b5fd" strokeWidth="2" opacity="0.55" />
+              <path d="M226 72 L248 54 L302 54 L280 72 M280 72 L302 54 L302 108 L280 126 M226 126 L248 108 L302 108" fill="none" stroke="#c4b5fd" strokeWidth="2" opacity="0.55" />
+            </svg>
           </div>
-        )}
-        <p className="mt-5 text-center text-xs font-bold leading-relaxed text-slate-500">관리자는 Google 로그인 후 Firestore에서 role이 admin인 계정만 관리 메뉴가 표시됩니다.</p>
+
+          <div className="relative text-center">
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-purple-50 text-5xl shadow-sm">
+              📚
+            </div>
+            <h1 className="mt-5 text-4xl font-black tracking-tight text-blue-950 md:text-5xl">
+              그래프탐험대
+            </h1>
+            <p className="mt-3 text-lg font-bold text-slate-500">
+              AI 기반 함수 그래프 학습 플래너
+            </p>
+          </div>
+
+          {mode === "signup" && (
+            <button
+              onClick={() => {
+                setMode("login");
+                setMessage("");
+              }}
+              className="mt-7 rounded-2xl border border-purple-200 bg-white px-4 py-2 text-sm font-black text-purple-700 hover:bg-purple-50"
+            >
+              ← 로그인으로
+            </button>
+          )}
+
+          <div className="relative mt-9 grid gap-8 md:grid-cols-[1fr_auto_1fr] md:items-center">
+            <div className="space-y-4">
+              {mode === "signup" && (
+                <>
+                  <div>
+                    <label className="mb-2 block text-sm font-black text-slate-600">이름/닉네임</label>
+                    <input value={name} onChange={(e) => setName(e.target.value)} className="w-full rounded-2xl border border-purple-100 bg-blue-50/70 px-5 py-4 font-bold outline-none focus:border-purple-400" placeholder="예) 김지우" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="mb-2 block text-sm font-black text-slate-600">반</label>
+                      <input value={className} onChange={(e) => setClassName(e.target.value)} className="w-full rounded-2xl border border-purple-100 bg-blue-50/70 px-5 py-4 font-bold outline-none focus:border-purple-400" placeholder="예) 5반" />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-sm font-black text-slate-600">번호</label>
+                      <input value={studentNumber} onChange={(e) => setStudentNumber(e.target.value.replace(/[^0-9]/g, ""))} className="w-full rounded-2xl border border-purple-100 bg-blue-50/70 px-5 py-4 font-bold outline-none focus:border-purple-400" placeholder="예) 12" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-black text-slate-600">학년</label>
+                    <select value={selectedGrade} onChange={(e) => setSelectedGrade(e.target.value)} className="w-full rounded-2xl border border-purple-100 bg-blue-50/70 px-5 py-4 font-bold text-slate-700 outline-none focus:border-purple-400">
+                      <option value="">선택</option>
+                      <option value="middle1">중1</option>
+                      <option value="middle2">중2</option>
+                      <option value="middle3">중3</option>
+                    </select>
+                  </div>
+                </>
+              )}
+
+              <div>
+                <label className="mb-2 block text-sm font-black text-slate-600">이메일</label>
+                <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" className="w-full rounded-2xl border border-purple-100 bg-blue-50/70 px-5 py-4 font-bold outline-none focus:border-purple-400" placeholder="email@example.com" />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-black text-slate-600">비밀번호</label>
+                <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" className="w-full rounded-2xl border border-purple-100 bg-blue-50/70 px-5 py-4 font-bold outline-none focus:border-purple-400" placeholder={mode === "signup" ? "6자 이상" : "비밀번호를 입력하세요"} />
+              </div>
+
+              <button onClick={handleEmailAuth} disabled={loading} className="w-full rounded-2xl bg-gradient-to-r from-purple-700 to-fuchsia-500 px-5 py-4 text-lg font-black text-white shadow-lg shadow-purple-100 disabled:opacity-50">
+                {loading ? "처리 중..." : mode === "signup" ? "Firebase 회원가입" : "이메일로 로그인"}
+              </button>
+            </div>
+
+            <div className="hidden h-full items-center justify-center md:flex">
+              <div className="flex h-full min-h-[260px] flex-col items-center justify-center">
+                <div className="w-px flex-1 bg-purple-100" />
+                <span className="my-3 text-sm font-bold text-slate-400">또는</span>
+                <div className="w-px flex-1 bg-purple-100" />
+              </div>
+            </div>
+
+            {mode === "login" && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 text-xs font-bold text-slate-400 md:hidden">
+                  <div className="h-px flex-1 bg-purple-100" />
+                  또는
+                  <div className="h-px flex-1 bg-purple-100" />
+                </div>
+
+                <button onClick={handleGoogleLogin} disabled={loading} className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-lg font-black text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50">
+                  🔐 Google로 로그인
+                </button>
+
+                <button onClick={onGuestLogin} disabled={loading} className="w-full rounded-2xl border border-blue-200 bg-blue-50 px-5 py-4 text-lg font-black text-blue-700 shadow-sm hover:bg-blue-100 disabled:opacity-50">
+                  👀 비회원으로 둘러보기
+                </button>
+
+                <p className="text-center text-sm font-bold leading-relaxed text-slate-500">
+                  비회원은 포인트와 성장기록이 저장되지 않습니다.
+                </p>
+              </div>
+            )}
+
+            {mode !== "login" && (
+              <div className="hidden rounded-[2rem] bg-gradient-to-br from-purple-50 to-blue-50 p-6 md:block">
+                <h3 className="text-lg font-black text-blue-950">회원가입 안내</h3>
+                <p className="mt-3 text-sm font-bold leading-relaxed text-slate-600">
+                  이름, 학년, 반, 번호는 관리자 화면에서 학생별 학습 기록을 확인할 때 사용됩니다.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {message && (
+            <div className="mt-5 rounded-2xl bg-amber-50 px-4 py-3 text-xs font-bold leading-relaxed text-amber-800">
+              {message}
+            </div>
+          )}
+
+          {mode === "login" && (
+            <div className="relative mt-8 border-t border-purple-100 pt-6">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex flex-wrap gap-3">
+                  <button onClick={() => { setMode("signup"); setMessage(""); }} className="rounded-2xl border border-purple-200 bg-white px-5 py-2.5 text-sm font-black text-purple-700 hover:bg-purple-50">
+                    회원가입
+                  </button>
+                  <button onClick={handlePasswordReset} className="rounded-2xl border border-purple-200 bg-white px-5 py-2.5 text-sm font-black text-purple-700 hover:bg-purple-50">
+                    비밀번호 찾기
+                  </button>
+                </div>
+                <p className="max-w-xl text-right text-sm font-bold leading-relaxed text-slate-500">
+                  관리자는 Google 로그인 후 Firestore에서 role이 admin인 계정만 관리자 메뉴가 표시됩니다.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
