@@ -453,9 +453,12 @@ function manualTranslateText(text, language) {
 
 function applyManualTranslation(language) {
   if (typeof document === "undefined") return;
+
   const root = document.body;
   if (!root) return;
+
   const skipTags = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "TEXTAREA"]);
+
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
     acceptNode(node) {
       const parent = node.parentElement;
@@ -465,19 +468,57 @@ function applyManualTranslation(language) {
       return NodeFilter.FILTER_ACCEPT;
     },
   });
+
   const textNodes = [];
   while (walker.nextNode()) textNodes.push(walker.currentNode);
+
   textNodes.forEach((node) => {
-    const normalizedOriginal = normalizeToKoreanText(node.__koOriginalText || node.nodeValue);
+    const currentText = node.nodeValue;
+    const storedOriginal = node.__koOriginalText;
+
+    const storedTranslated = storedOriginal
+      ? manualTranslateText(storedOriginal, language)
+      : null;
+
+    const reactChangedText =
+      !storedOriginal ||
+      (currentText !== storedOriginal && currentText !== storedTranslated);
+
+    const normalizedOriginal = normalizeToKoreanText(
+      reactChangedText ? currentText : storedOriginal
+    );
+
     node.__koOriginalText = normalizedOriginal;
+
     const nextText = manualTranslateText(normalizedOriginal, language);
-    if (node.nodeValue !== nextText) node.nodeValue = nextText;
+
+    if (node.nodeValue !== nextText) {
+      node.nodeValue = nextText;
+    }
   });
+
   document.querySelectorAll("input[placeholder], textarea[placeholder]").forEach((element) => {
-    const normalizedPlaceholder = normalizeToKoreanText(element.dataset.koPlaceholder || element.getAttribute("placeholder") || "");
+    const currentPlaceholder = element.getAttribute("placeholder") || "";
+    const storedPlaceholder = element.dataset.koPlaceholder || "";
+    const storedTranslated = storedPlaceholder
+      ? manualTranslateText(storedPlaceholder, language)
+      : "";
+
+    const reactChangedPlaceholder =
+      !storedPlaceholder ||
+      (currentPlaceholder !== storedPlaceholder && currentPlaceholder !== storedTranslated);
+
+    const normalizedPlaceholder = normalizeToKoreanText(
+      reactChangedPlaceholder ? currentPlaceholder : storedPlaceholder
+    );
+
     element.dataset.koPlaceholder = normalizedPlaceholder;
+
     const nextPlaceholder = manualTranslateText(normalizedPlaceholder, language);
-    if (element.getAttribute("placeholder") !== nextPlaceholder) element.setAttribute("placeholder", nextPlaceholder);
+
+    if (element.getAttribute("placeholder") !== nextPlaceholder) {
+      element.setAttribute("placeholder", nextPlaceholder);
+    }
   });
 }
 
