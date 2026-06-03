@@ -65,6 +65,12 @@ const isFirebaseConfigured = Boolean(
 const firebaseApp = isFirebaseConfigured ? initializeApp(firebaseConfig) : null;
 const auth = firebaseApp ? getAuth(firebaseApp) : null;
 const googleProvider = firebaseApp ? new GoogleAuthProvider() : null;
+
+if (googleProvider) {
+  googleProvider.setCustomParameters({
+    prompt: "select_account",
+  });
+}
 const db = firebaseApp ? getFirestore(firebaseApp) : null;
 
 const navItems = [
