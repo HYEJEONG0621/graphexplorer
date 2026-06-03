@@ -5,10 +5,8 @@ import {
   createUserWithEmailAndPassword,
   getAuth,
   GoogleAuthProvider,
-  inMemoryPersistence,
   onAuthStateChanged,
   sendPasswordResetEmail,
-  setPersistence,
   signInWithEmailAndPassword,
   signInWithPopup,
   signInWithRedirect,
@@ -67,13 +65,6 @@ const isFirebaseConfigured = Boolean(
 const firebaseApp = isFirebaseConfigured ? initializeApp(firebaseConfig) : null;
 const auth = firebaseApp ? getAuth(firebaseApp) : null;
 const googleProvider = firebaseApp ? new GoogleAuthProvider() : null;
-
-if (googleProvider) {
-  googleProvider.setCustomParameters({
-    prompt: "select_account",
-  });
-}
-
 const db = firebaseApp ? getFirestore(firebaseApp) : null;
 
 const navItems = [
@@ -463,8 +454,6 @@ function manualTranslateText(text, language) {
 function applyManualTranslation(language) {
   if (typeof document === "undefined") return;
 
-  // 한국어로 돌아올 때도 DOM에 남아 있는 번역 문구를 다시 한국어 원문으로 복원합니다.
-
   const root = document.body;
   if (!root) return;
 
@@ -486,7 +475,10 @@ function applyManualTranslation(language) {
   textNodes.forEach((node) => {
     const currentText = node.nodeValue;
     const storedOriginal = node.__koOriginalText;
-    const storedTranslated = storedOriginal ? manualTranslateText(storedOriginal, language) : null;
+
+    const storedTranslated = storedOriginal
+      ? manualTranslateText(storedOriginal, language)
+      : null;
 
     const reactChangedText =
       !storedOriginal ||
@@ -497,6 +489,7 @@ function applyManualTranslation(language) {
     );
 
     node.__koOriginalText = normalizedOriginal;
+
     const nextText = manualTranslateText(normalizedOriginal, language);
 
     if (node.nodeValue !== nextText) {
@@ -520,6 +513,7 @@ function applyManualTranslation(language) {
     );
 
     element.dataset.koPlaceholder = normalizedPlaceholder;
+
     const nextPlaceholder = manualTranslateText(normalizedPlaceholder, language);
 
     if (element.getAttribute("placeholder") !== nextPlaceholder) {
@@ -1023,8 +1017,6 @@ export default function App() {
   }, [language]);
 
   useEffect(() => {
-    // 언어가 바뀔 때마다 현재 DOM을 선택 언어로 다시 정리합니다.
-    // 특히 한국어로 돌아올 때 이전 중국어/일본어/영어 문구가 상단 제목에 남는 문제를 막습니다.
     const run = () => applyManualTranslation(language);
     const frame = requestAnimationFrame(run);
     const observer = new MutationObserver(() => requestAnimationFrame(run));
@@ -1081,15 +1073,7 @@ export default function App() {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setAuthUser(user);
       setAuthLoading(false);
-      if (!user) return;
-      if (sessionStorage.getItem("functionExplorerLoginSession") !== "active") {
-        await signOut(auth).catch(() => {});
-        setAuthUser(null);
-        setStudentProfile({});
-        setAuthLoading(false);
-        return;
-      }
-      if (!db) return;
+      if (!user || !db) return;
       const userRef = doc(db, "users", user.uid);
       const snapshot = await getDoc(userRef);
       const baseProfile = {
@@ -1155,16 +1139,14 @@ export default function App() {
 
   useEffect(() => {
     if (guestMode || !authUser || !db) return;
-
     const saveTimer = setTimeout(() => {
-      const { role: _ignoredRole, ...profileWithoutRole } = studentProfile || {};
-
       setDoc(doc(db, "users", authUser.uid), {
         profile: {
-          ...profileWithoutRole,
+          ...studentProfile,
           uid: authUser.uid,
           email: authUser.email || "",
           name: studentName,
+          role: studentProfile.role || "student",
         },
         progress: {
           currentGrade: grade,
@@ -1181,9 +1163,8 @@ export default function App() {
         updatedAt: serverTimestamp(),
       }, { merge: true });
     }, 500);
-
     return () => clearTimeout(saveTimer);
-  }, [authUser, grade, expPoints, missionCompleted, assessmentAnswers, gradeAssessmentAnswers, graphReflections, studentName, studentProfile]);
+  }, [authUser, grade, expPoints, missionCompleted, assessmentAnswers, gradeAssessmentAnswers, graphReflections, studentName, studentProfile.role]);
 
   const handleLoginSuccess = (profile) => {
     setGuestMode(false);
@@ -1209,7 +1190,6 @@ export default function App() {
   };
 
   const handleGuestLogin = () => {
-    sessionStorage.removeItem("functionExplorerLoginSession");
     setGuestMode(true);
     setAuthUser(null);
     setStudentProfile({ name: "비회원 체험", role: "guest" });
@@ -1220,7 +1200,6 @@ export default function App() {
   };
 
   const handleLogout = async () => {
-    sessionStorage.removeItem("functionExplorerLoginSession");
     if (auth && authUser) await signOut(auth);
     setGuestMode(false);
     setAuthUser(null);
@@ -1250,7 +1229,7 @@ export default function App() {
   }
 
   return (
-    <div key={`app-shell-${language}`} className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100 text-slate-800">
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100 text-slate-800">
       <div className="mx-auto flex min-h-screen max-w-[1500px] gap-3 p-3">
         <Sidebar active={active} setActive={setActive} studentName={studentName} language={language} isAdmin={studentProfile.role === "admin"} />
         <main className="flex min-h-screen min-w-0 flex-1 flex-col gap-3">
@@ -1286,49 +1265,18 @@ function AuthScreen({ onLoginSuccess, onGuestLogin }) {
 
   const saveProfile = async (user, extra = {}) => {
     if (!user) return;
-
     const shouldResetProgress = !!extra.resetProgress;
-    let existingProfile = {};
-
-    if (db) {
-      const userRef = doc(db, "users", user.uid);
-      const snapshot = await getDoc(userRef);
-
-      if (snapshot.exists()) {
-        existingProfile = snapshot.data()?.profile || {};
-      }
-    }
-
-    const keepOrNew = (newValue, oldValue, fallback = "") => {
-      if (
-        newValue !== undefined &&
-        newValue !== null &&
-        String(newValue).trim() !== ""
-      ) {
-        return newValue;
-      }
-
-      if (oldValue !== undefined && oldValue !== null) {
-        return oldValue;
-      }
-
-      return fallback;
-    };
-
     const profile = {
-      ...existingProfile,
       uid: user.uid,
-      email: user.email || email || existingProfile.email || "",
-      name: keepOrNew(extra.name || user.displayName || name, existingProfile.name, "학생 이름"),
-      grade: keepOrNew(extra.grade || selectedGrade, existingProfile.grade, ""),
-      className: keepOrNew(extra.className || className, existingProfile.className, ""),
-      studentNumber: keepOrNew(extra.studentNumber || studentNumber, existingProfile.studentNumber, ""),
-      role: existingProfile.role || extra.role || "student",
+      email: user.email || email,
+      name: extra.name || user.displayName || name || "학생 이름",
+      grade: extra.grade || selectedGrade || "",
+      className: extra.className || className || "",
+      studentNumber: extra.studentNumber || studentNumber || "",
+      role: "student",
     };
-
     localStorage.setItem("functionExplorerStudentProfile", JSON.stringify(profile));
     localStorage.setItem("functionExplorerStudentName", profile.name);
-
     if (shouldResetProgress) {
       localStorage.setItem("functionExplorer:" + user.uid + ":points", "0");
       localStorage.setItem("functionExplorer:" + user.uid + ":missionCompleted", JSON.stringify({}));
@@ -1337,15 +1285,13 @@ function AuthScreen({ onLoginSuccess, onGuestLogin }) {
       localStorage.removeItem("functionExplorerMissionCompleted");
       localStorage.removeItem("functionExplorerGraphReflections");
     }
-
     if (db) {
       const payload = {
         profile,
+        createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
-
       if (shouldResetProgress) {
-        payload.createdAt = serverTimestamp();
         payload.progress = {
           currentGrade: profile.grade || "middle1",
           points: 0,
@@ -1359,10 +1305,8 @@ function AuthScreen({ onLoginSuccess, onGuestLogin }) {
           middle3: {},
         };
       }
-
       await setDoc(doc(db, "users", user.uid), payload, { merge: true });
     }
-
     onLoginSuccess({ ...profile, __resetProgress: shouldResetProgress });
   };
 
@@ -1390,8 +1334,6 @@ function AuthScreen({ onLoginSuccess, onGuestLogin }) {
     setLoading(true);
     setMessage("");
     try {
-      await setPersistence(auth, inMemoryPersistence);
-      sessionStorage.setItem("functionExplorerLoginSession", "active");
       const credential = mode === "signup"
         ? await createUserWithEmailAndPassword(auth, email, password)
         : await signInWithEmailAndPassword(auth, email, password);
@@ -1411,24 +1353,13 @@ function AuthScreen({ onLoginSuccess, onGuestLogin }) {
     setLoading(true);
     setMessage("");
     try {
-      await setPersistence(auth, inMemoryPersistence);
-      await signOut(auth).catch(() => {});
-      sessionStorage.setItem("functionExplorerLoginSession", "active");
-      const accountSelectProvider = new GoogleAuthProvider();
-      accountSelectProvider.setCustomParameters({
-        prompt: "select_account",
-      });
-      const credential = await signInWithPopup(auth, accountSelectProvider);
+      const credential = await signInWithPopup(auth, googleProvider);
       await saveProfile(credential.user, { name: credential.user.displayName || "학생 이름" });
     } catch (error) {
       if (error?.code === "auth/popup-blocked" || error?.code === "auth/cancelled-popup-request") {
         setMessage("팝업이 차단되어 redirect 방식으로 Google 로그인을 다시 시도합니다. 화면이 이동하면 계속 진행하세요.");
         try {
-          const redirectProvider = new GoogleAuthProvider();
-          redirectProvider.setCustomParameters({
-            prompt: "select_account",
-          });
-          await signInWithRedirect(auth, redirectProvider);
+          await signInWithRedirect(auth, googleProvider);
           return;
         } catch (redirectError) {
           setMessage(redirectError?.message || "Google redirect 로그인 중 오류가 발생했습니다.");
@@ -1463,151 +1394,77 @@ function AuthScreen({ onLoginSuccess, onGuestLogin }) {
   };
 
   return (
-    <div className="relative grid min-h-screen place-items-center overflow-hidden bg-gradient-to-br from-slate-50 via-white to-blue-50 px-4 py-6 md:px-6 md:py-8 text-slate-800">
-      <div className="pointer-events-none absolute -left-24 top-10 h-72 w-72 rounded-full bg-purple-100/70 blur-3xl" />
-      <div className="pointer-events-none absolute -right-20 bottom-12 h-80 w-80 rounded-full bg-blue-100/80 blur-3xl" />
-
-      <div className="relative w-full max-w-[1180px]">
-        <div className="pointer-events-none absolute inset-x-10 top-8 hidden h-[640px] rounded-[3rem] border-[18px] border-slate-950/95 shadow-2xl shadow-slate-300/70 md:block" />
-        <div className="pointer-events-none absolute left-1/2 top-12 z-10 hidden h-2 w-24 -translate-x-1/2 rounded-full bg-slate-800 md:block" />
-
-        <div className="relative z-20 mx-auto w-full max-w-[1040px] rounded-[2rem] border border-purple-100 bg-white/88 p-8 shadow-2xl shadow-blue-100/80 backdrop-blur-xl md:mt-14 md:p-12 xl:p-14">
-          <div className="pointer-events-none absolute right-8 top-8 hidden h-64 w-64 opacity-40 md:block xl:h-72 xl:w-72">
-            <svg viewBox="0 0 320 260" className="h-full w-full">
-              <defs>
-                <linearGradient id="loginGraphLine" x1="0" x2="1" y1="0" y2="1">
-                  <stop offset="0%" stopColor="#a78bfa" />
-                  <stop offset="100%" stopColor="#bfdbfe" />
-                </linearGradient>
-              </defs>
-              {Array.from({ length: 11 }).map((_, i) => (
-                <line key={`gx-${i}`} x1={20 + i * 26} y1="22" x2={105 + i * 26} y2="210" stroke="#ddd6fe" strokeWidth="1" />
-              ))}
-              {Array.from({ length: 8 }).map((_, i) => (
-                <line key={`gy-${i}`} x1="28" y1={42 + i * 24} x2="288" y2={-8 + i * 24} stroke="#e0e7ff" strokeWidth="1" />
-              ))}
-              <line x1="112" y1="196" x2="112" y2="32" stroke="#c4b5fd" strokeWidth="2" />
-              <line x1="54" y1="170" x2="292" y2="112" stroke="#c4b5fd" strokeWidth="2" />
-              <path d="M86 144 C124 148, 142 98, 160 64 C184 16, 202 66, 212 112 C222 164, 248 166, 286 150" fill="none" stroke="url(#loginGraphLine)" strokeWidth="4" strokeLinecap="round" />
-              <text x="198" y="54" fill="#a78bfa" fontSize="16" fontWeight="800">f(x)</text>
-              <text x="292" y="128" fill="#a78bfa" fontSize="14" fontWeight="800">x</text>
-              <text x="118" y="30" fill="#a78bfa" fontSize="14" fontWeight="800">y</text>
-              <rect x="238" y="68" width="44" height="44" fill="none" stroke="#c7d2fe" strokeWidth="2" />
-              <path d="M238 68 L262 48 L306 48 L282 68 Z M282 68 L306 48 L306 92 L282 112 Z" fill="none" stroke="#c7d2fe" strokeWidth="2" />
-            </svg>
-          </div>
-
-          <div className="relative z-10 text-center">
-            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[1.6rem] bg-gradient-to-br from-purple-50 to-blue-50 text-5xl shadow-sm">📚</div>
-            <h1 className="mt-5 text-4xl font-black tracking-tight text-blue-950 md:text-5xl">그래프탐험대</h1>
-            <p className="mt-3 text-lg font-bold text-slate-600">AI 기반 함수 그래프 학습 플래너</p>
-          </div>
-
-          <div className="relative z-10 mt-10 grid items-start gap-8 md:grid-cols-[1fr_64px_1fr]">
-            <div className="space-y-4">
-              {mode === "signup" && (
-                <div className="rounded-[1.4rem] border border-purple-100 bg-purple-50/80 p-4">
-                  <div className="mb-4 flex items-center justify-between gap-3">
-                    <div>
-                      <div className="text-lg font-black text-purple-950">학생 계정 만들기</div>
-                      <p className="mt-1 text-xs font-bold text-slate-500">학년, 반, 번호를 입력하면 성장기록이 저장됩니다.</p>
-                    </div>
-                    <button
-                      onClick={() => { setMode("login"); setMessage(""); }}
-                      className="rounded-xl border border-purple-200 bg-white px-4 py-2 text-sm font-black text-purple-700 hover:bg-purple-50"
-                    >
-                      로그인으로
-                    </button>
-                  </div>
-                  <label className="block text-sm font-black text-slate-600">이름/닉네임</label>
-                  <input value={name} onChange={(e) => setName(e.target.value)} className="mt-2 w-full rounded-2xl border border-purple-100 bg-white px-4 py-3 font-bold outline-none focus:border-purple-400" placeholder="예) 김지우" />
-                  <div className="mt-3 grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-sm font-black text-slate-600">반</label>
-                      <input value={className} onChange={(e) => setClassName(e.target.value)} className="mt-2 w-full rounded-2xl border border-purple-100 bg-white px-4 py-3 font-bold outline-none focus:border-purple-400" placeholder="예) 5반" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-black text-slate-600">번호</label>
-                      <input value={studentNumber} onChange={(e) => setStudentNumber(e.target.value.replace(/[^0-9]/g, ""))} className="mt-2 w-full rounded-2xl border border-purple-100 bg-white px-4 py-3 font-bold outline-none focus:border-purple-400" placeholder="예) 12" />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <label className="block text-base font-black text-slate-700">이메일</label>
-                <input
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  type="email"
-                  className="mt-3 w-full rounded-2xl border border-blue-100 bg-blue-50/80 px-5 py-4 text-lg font-black text-slate-900 outline-none transition focus:border-blue-400 focus:bg-white"
-                  placeholder="student@example.com"
-                />
-              </div>
-
-              <div>
-                <label className="block text-base font-black text-slate-700">비밀번호</label>
-                <input
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  type="password"
-                  className="mt-3 w-full rounded-2xl border border-blue-100 bg-blue-50/80 px-5 py-4 text-lg font-black text-slate-900 outline-none transition focus:border-blue-400 focus:bg-white"
-                  placeholder={mode === "signup" ? "6자 이상" : "비밀번호"}
-                />
-              </div>
-
-              {mode === "signup" && (
-                <div>
-                  <label className="block text-base font-black text-slate-700">학년</label>
-                  <select value={selectedGrade} onChange={(e) => setSelectedGrade(e.target.value)} className="mt-3 w-full rounded-2xl border border-blue-100 bg-white px-5 py-4 text-lg font-black text-slate-700 outline-none focus:border-blue-400">
-                    <option value="">선택</option>
-                    <option value="middle1">중1</option>
-                    <option value="middle2">중2</option>
-                    <option value="middle3">중3</option>
-                  </select>
-                </div>
-              )}
-
-              <button onClick={handleEmailAuth} disabled={loading} className="w-full rounded-2xl bg-gradient-to-r from-purple-700 to-purple-500 px-5 py-4 text-lg font-black text-white shadow-lg shadow-purple-200 transition hover:from-purple-800 hover:to-purple-600 disabled:opacity-50">
-                {loading ? "처리 중..." : mode === "signup" ? "Firebase 회원가입" : "이메일로 로그인"}
-              </button>
-            </div>
-
-            <div className="hidden h-full items-center justify-center md:flex">
-              <div className="relative h-[236px] w-px bg-slate-200">
-                <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white px-3 py-2 text-sm font-black text-slate-400">또는</span>
-              </div>
-            </div>
-
-            <div className="flex h-full flex-col justify-center space-y-4 pt-1 md:pt-20">
-              {mode === "login" && (
-                <>
-                  <button onClick={handleGoogleLogin} disabled={loading} className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-lg font-black text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-md disabled:opacity-50">🔐 Google로 로그인</button>
-                  <button onClick={onGuestLogin} disabled={loading} className="w-full rounded-2xl border border-blue-200 bg-blue-50 px-5 py-4 text-lg font-black text-blue-700 shadow-sm transition hover:-translate-y-0.5 hover:bg-blue-100 hover:shadow-md disabled:opacity-50">👀 비회원으로 둘러보기</button>
-                  <p className="text-center text-sm font-bold leading-relaxed text-slate-500">비회원은 포인트와 성장기록이 저장되지 않습니다.</p>
-                </>
-              )}
-
-              {message && <div className="rounded-2xl bg-amber-50 px-4 py-3 text-sm font-bold leading-relaxed text-amber-800">{message}</div>}
-            </div>
-          </div>
-
-          <div className="relative z-10 mt-8 border-t border-slate-200 pt-6">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              {mode === "login" ? (
-                <div className="flex justify-center gap-3 lg:justify-start">
-                  <button onClick={() => { setMode("signup"); setMessage(""); }} className="rounded-2xl border border-purple-200 bg-white px-5 py-3 text-base font-black text-purple-700 transition hover:bg-purple-50">
-                    회원가입
-                  </button>
-                  <button onClick={handlePasswordReset} className="rounded-2xl border border-purple-200 bg-white px-5 py-3 text-base font-black text-purple-700 transition hover:bg-purple-50">비밀번호 찾기</button>
-                </div>
-              ) : (
-                <div className="text-sm font-bold text-slate-500">가입 후 학년별 학습 기록이 Firestore에 저장됩니다.</div>
-              )}
-              <p className="text-center text-sm font-bold leading-relaxed text-slate-600 lg:max-w-[520px] lg:text-right">관리자는 Google 로그인 후 Firestore에서 role이 admin인 계정만 관리자 메뉴가 표시됩니다.</p>
-            </div>
-          </div>
+    <div className="grid min-h-screen place-items-center bg-gradient-to-br from-purple-50 via-white to-blue-50 p-4 text-slate-800">
+      <div className="w-full max-w-[430px] rounded-[2rem] border border-purple-200 bg-gradient-to-br from-white via-purple-50 to-blue-50 p-8 shadow-xl">
+        <div className="text-center">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-purple-50 text-4xl">📚</div>
+          <h1 className="mt-4 text-2xl font-black text-blue-950">그래프탐험대</h1>
+          <p className="mt-1 text-sm font-bold text-slate-500">AI 기반 함수 그래프 학습 플래너</p>
         </div>
+
+        <div className="mt-6 space-y-3">
+          {mode === "signup" && (
+            <>
+              <button
+                onClick={() => { setMode("login"); setMessage(""); }}
+                className="mb-2 rounded-2xl border border-purple-200 bg-white px-4 py-2 text-sm font-black text-purple-700 hover:bg-purple-50"
+              >
+                ← 로그인으로
+              </button>
+              <label className="block text-sm font-black text-slate-600">이름/닉네임</label>
+              <input value={name} onChange={(e) => setName(e.target.value)} className="w-full rounded-2xl border border-purple-100 px-4 py-3 font-bold outline-none focus:border-purple-400" placeholder="예) 김지우" />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-black text-slate-600">반</label>
+                  <input value={className} onChange={(e) => setClassName(e.target.value)} className="w-full rounded-2xl border border-purple-100 px-4 py-3 font-bold outline-none focus:border-purple-400" placeholder="예) 5반" />
+                </div>
+                <div>
+                  <label className="block text-sm font-black text-slate-600">번호</label>
+                  <input value={studentNumber} onChange={(e) => setStudentNumber(e.target.value.replace(/[^0-9]/g, ""))} className="w-full rounded-2xl border border-purple-100 px-4 py-3 font-bold outline-none focus:border-purple-400" placeholder="예) 12" />
+                </div>
+              </div>
+            </>
+          )}
+          <label className="block text-sm font-black text-slate-600">이메일</label>
+          <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" className="w-full rounded-2xl border border-purple-100 px-4 py-3 font-bold outline-none focus:border-purple-400" placeholder="email@example.com" />
+          <label className="block text-sm font-black text-slate-600">비밀번호</label>
+          <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" className="w-full rounded-2xl border border-purple-100 px-4 py-3 font-bold outline-none focus:border-purple-400" placeholder={mode === "signup" ? "6자 이상" : "비밀번호를 입력하세요"} />
+          {mode === "signup" && (
+            <>
+              <label className="block text-sm font-black text-slate-600">학년</label>
+              <select value={selectedGrade} onChange={(e) => setSelectedGrade(e.target.value)} className="w-full rounded-2xl border border-purple-100 bg-white px-4 py-3 font-bold text-slate-700 outline-none focus:border-purple-400">
+                <option value="">선택</option>
+                <option value="middle1">중1</option>
+                <option value="middle2">중2</option>
+                <option value="middle3">중3</option>
+              </select>
+            </>
+          )}
+          <button onClick={handleEmailAuth} disabled={loading} className="w-full rounded-2xl bg-purple-600 px-5 py-3 font-black text-white shadow-lg shadow-purple-100 disabled:opacity-50">
+            {loading ? "처리 중..." : mode === "signup" ? "Firebase 회원가입" : "이메일로 로그인"}
+          </button>
+        </div>
+
+        {mode === "login" && (
+          <>
+            <div className="my-5 flex items-center gap-3 text-xs font-bold text-slate-400"><div className="h-px flex-1 bg-purple-100" />또는<div className="h-px flex-1 bg-purple-100" /></div>
+            <button onClick={handleGoogleLogin} disabled={loading} className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 font-black text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50">🔐 Google로 로그인</button>
+            <button onClick={onGuestLogin} disabled={loading} className="mt-3 w-full rounded-2xl border border-blue-200 bg-blue-50 px-5 py-3 font-black text-blue-700 shadow-sm hover:bg-blue-100 disabled:opacity-50">👀 비회원으로 둘러보기</button>
+            <p className="mt-2 text-center text-xs font-bold leading-relaxed text-slate-500">비회원은 포인트와 성장기록이 저장되지 않습니다.</p>
+          </>
+        )}
+
+        {message && <div className="mt-4 rounded-2xl bg-amber-50 px-4 py-3 text-xs font-bold leading-relaxed text-amber-800">{message}</div>}
+
+        {mode === "login" && (
+          <div className="mt-6 flex justify-center gap-3">
+            <button onClick={() => { setMode("signup"); setMessage(""); }} className="rounded-2xl border border-purple-200 bg-white px-4 py-2 text-sm font-black text-purple-700 hover:bg-purple-50">
+              회원가입
+            </button>
+            <button onClick={handlePasswordReset} className="rounded-2xl border border-purple-200 bg-white px-4 py-2 text-sm font-black text-purple-700 hover:bg-purple-50">비밀번호 찾기</button>
+          </div>
+        )}
+        <p className="mt-5 text-center text-xs font-bold leading-relaxed text-slate-500">관리자는 Google 로그인 후 Firestore에서 role이 admin인 계정만 관리 메뉴가 표시됩니다.</p>
       </div>
     </div>
   );
@@ -4463,7 +4320,7 @@ function GradeExtensionConcept({ grade, completeMission, isMissionComplete }) {
           <h2 className="text-2xl font-black text-blue-950">{stripUnitPrefix(item.title)}</h2>
           <p className="mt-1 text-sm font-bold text-slate-500">{item.desc}</p>
         </div>
-        <div className="hidden rounded-[1.5rem] bg-blue-50 px-5 py-3 text-center text-xl font-black text-blue-700 md:block">{item.visual}</div>
+        <div className="hidden rounded-[1.5rem] bg-blue-50 px-5 py-3 text-center text-xl font-black text-blue-700 xl:block">{item.visual}</div>
       </div>
 
       <div className="grid h-[calc(100%-86px)] min-h-0 gap-4 xl:grid-cols-[1.05fr_1.05fr_0.9fr]">
@@ -4509,7 +4366,7 @@ function GradeExtensionConcept({ grade, completeMission, isMissionComplete }) {
           {(grade === "middle2" || grade === "middle3") && item.unitKey ? (
             <>
               <h3 className="text-xl font-black text-purple-950">그래프로 이해하기</h3>
-              <div className="mt-4 hidden md:block">
+              <div className="mt-4 hidden xl:block">
                 {grade === "middle2" ? <Middle2ConceptVisual unitKey={item.unitKey} /> : <Middle3ConceptVisual unitKey={item.unitKey} />}
               </div>
               <div className="mt-4 space-y-3">
