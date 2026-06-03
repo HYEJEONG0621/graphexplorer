@@ -1923,7 +1923,7 @@ function HomeScreen({ setActive, expPoints = 0, isMissionComplete }) {
   ];
 
   return (
-    <div className="grid h-full grid-cols-2 grid-rows-4 gap-3 overflow-hidden xl:grid-cols-4 xl:grid-rows-2">
+    <div className="grid h-full grid-cols-4 grid-rows-2 gap-3 overflow-hidden">
       {homeTiles.map((tile) => {
         const Icon = tile.icon;
         const isPointTile = tile.type === "points";
@@ -4187,7 +4187,7 @@ function GradeExtensionHome({ grade, setActive, expPoints, isMissionComplete }) 
     { title: "성장기록", desc: "학습 흐름과 다음 학습을 확인해요.", icon: BarChart3, target: "growth" },
   ];
   return (
-    <div className="grid h-full grid-cols-2 grid-rows-4 gap-3 overflow-hidden xl:grid-cols-4 xl:grid-rows-2">
+    <div className="grid h-full grid-cols-4 grid-rows-2 gap-3 overflow-hidden">
       {tiles.map((tile) => {
         const Icon = tile.icon;
         return <Card key={tile.title} className="p-5"><div className="flex h-full flex-col justify-between gap-3"><div><IconBadge icon={Icon} color={tile.title === "탐험 포인트" ? "orange" : "purple"} /><h3 className="mt-4 text-xl font-black text-blue-950">{tile.title}</h3>{tile.value && <div className="mt-3 rounded-2xl bg-amber-50 px-4 py-3 text-3xl font-black text-amber-700">⭐ {tile.value}</div>}<p className="mt-3 text-sm font-bold leading-relaxed text-slate-600">{tile.desc}</p></div>{tile.target ? <div className="space-y-2">{["ready", "concept", "explore", "assessment"].includes(tile.target) && <MissionStatusBadge done={isMissionComplete(tile.target)} />}<button onClick={() => setActive(tile.target)} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-base font-black text-white shadow-lg shadow-blue-100">열기 <ChevronRight className="h-4 w-4" /></button></div> : <div className="rounded-2xl bg-amber-50 px-4 py-3 text-sm font-black text-amber-700">학습 미션 완료 시 포인트가 올라가요.</div>}</div></Card>;
