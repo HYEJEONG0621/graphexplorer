@@ -2482,15 +2482,21 @@ function ExploreScreen({ completeMission, isMissionComplete, reflection, onSaveR
   const changeMission = () => {
     setMissionIndex((prev) => {
       let next = Math.floor(Math.random() * missionBank.length);
-      while (next === prev && missionBank.length > 1) next = Math.floor(Math.random() * missionBank.length);
+      while (next === prev && missionBank.length > 1) {
+        next = Math.floor(Math.random() * missionBank.length);
+      }
+      const nextMission = missionBank[next];
+      setFeedback(`새 미션이 나왔어요. ${nextMission.hint}`);
       return next;
     });
     setPlottedPoints([]);
-    setFeedback("새 미션이 나왔어요. 조건에 맞는 점을 찍어 보세요.");
   };
 
   const resetTable = (type = tableType) => {
-    const nextA = makeRandomA(type);
+    let nextA = makeRandomA(type);
+    while (nextA === tableA) {
+      nextA = makeRandomA(type);
+    }
     setTableType(type);
     setTableA(nextA);
     setTableInputs({});
@@ -2551,7 +2557,10 @@ function ExploreScreen({ completeMission, isMissionComplete, reflection, onSaveR
   };
   const correctChallengeCount = plottedPoints.filter((point) => point.correct).length;
   const startChallenge = () => {
-    const next = makeRandomChallenge();
+    let next = makeRandomChallenge();
+    while (next.type === challenge.type && next.a === challenge.a) {
+      next = makeRandomChallenge();
+    }
     setChallenge(next);
     setPlottedPoints([]);
     setShowChallengeGraph(false);
@@ -2601,7 +2610,7 @@ function ExploreScreen({ completeMission, isMissionComplete, reflection, onSaveR
               <h3 className="text-lg font-black text-blue-950">{mission.title}</h3>
               <p className="mt-2 text-sm font-bold text-slate-600">{mission.description}</p>
               <div className="mt-3 rounded-xl bg-blue-50 px-3 py-2 text-sm font-black text-blue-700">힌트: {mission.hint}</div>
-              <button onClick={changeMission} className="mt-3 w-full rounded-2xl border border-blue-200 bg-white px-4 py-2 text-sm font-black text-blue-700 transition hover:bg-blue-50">랜덤 미션 바꾸기</button>
+              <button type="button" onClick={changeMission} className="mt-3 w-full rounded-2xl border border-blue-200 bg-white px-4 py-2 text-sm font-black text-blue-700 transition hover:bg-blue-50">랜덤 미션 바꾸기</button>
             </div>
           )}
 
@@ -2624,7 +2633,7 @@ function ExploreScreen({ completeMission, isMissionComplete, reflection, onSaveR
               </div>
               <div className="mt-3 grid grid-cols-2 gap-2">
                 <button onClick={drawTableGraph} className="rounded-2xl bg-purple-600 px-4 py-3 text-sm font-black text-white shadow-lg shadow-purple-100">그래프 그리기</button>
-                <button onClick={() => resetTable(tableType)} className="rounded-2xl border border-purple-200 bg-white px-4 py-3 text-sm font-black text-purple-700">랜덤 함수식</button>
+                <button type="button" onClick={() => resetTable(tableType)} className="rounded-2xl border border-purple-200 bg-white px-4 py-3 text-sm font-black text-purple-700">랜덤 함수식</button>
               </div>
               <div className="mt-3 rounded-2xl bg-slate-50 px-3 py-2 text-xs font-bold text-slate-600">빈칸에 숫자를 입력하면 좌표평면에 점이 바로 찍힙니다.</div>
             </div>
@@ -2647,7 +2656,7 @@ function ExploreScreen({ completeMission, isMissionComplete, reflection, onSaveR
               </div>
               <div className="mt-3 grid grid-cols-2 gap-2">
                 <button onClick={drawChallengeGraph} className="rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-black text-white shadow-lg shadow-emerald-100">그래프 완성하기</button>
-                <button onClick={startChallenge} className="rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm font-black text-emerald-700">랜덤 미션</button>
+                <button type="button" onClick={startChallenge} className="rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm font-black text-emerald-700">랜덤 미션</button>
               </div>
             </div>
           )}
