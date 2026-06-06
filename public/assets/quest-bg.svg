@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#72d5ff"/><stop offset="0.55" stop-color="#bfefff"/><stop offset="1" stop-color="#d9f4d6"/></linearGradient>
+    <linearGradient id="hill" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#7fcf89"/><stop offset="1" stop-color="#3c9f67"/></linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#sky)"/>
+  <circle cx="1360" cy="105" r="62" fill="#fff7c8" opacity=".85"/>
+  <g opacity=".9" fill="#fff">
+    <ellipse cx="230" cy="130" rx="115" ry="32"/><ellipse cx="295" cy="122" rx="65" ry="42"/><ellipse cx="150" cy="118" rx="70" ry="42"/>
+    <ellipse cx="960" cy="165" rx="150" ry="38"/><ellipse cx="1045" cy="153" rx="82" ry="52"/><ellipse cx="840" cy="152" rx="70" ry="45"/>
+  </g>
+  <path d="M0 650 C170 550 290 590 420 500 C600 380 760 500 900 410 C1040 320 1160 460 1290 395 C1435 325 1530 420 1600 385 L1600 900 L0 900 Z" fill="#81d099"/>
+  <path d="M0 730 C210 610 350 705 520 590 C660 495 760 620 930 560 C1100 500 1190 630 1370 560 C1485 515 1560 565 1600 545 L1600 900 L0 900 Z" fill="url(#hill)"/>
+  <path d="M680 900 C790 770 885 700 1040 605 C1135 548 1255 542 1390 490 C1310 590 1220 710 1170 900 Z" fill="#52b8e8" opacity=".55"/>
+  <g transform="translate(1320 315)">
+    <path d="M105 165 L30 165 L30 70 L105 70 Z" fill="#d2d5e8" stroke="#6d74a3" stroke-width="4"/>
+    <path d="M18 72 L68 18 L118 72 Z" fill="#5968b8" stroke="#3b478f" stroke-width="4"/>
+    <rect x="55" y="108" width="28" height="57" rx="8" fill="#795138"/>
+    <rect x="38" y="88" width="18" height="22" rx="4" fill="#7dd3fc"/>
+    <rect x="82" y="88" width="18" height="22" rx="4" fill="#7dd3fc"/>
+    <path d="M10 165 L128 165" stroke="#374151" stroke-width="5"/>
+    <g fill="#7554c8"><path d="M25 66 L25 10 L45 18 L25 26"/><path d="M110 71 L110 16 L132 24 L110 32"/></g>
+  </g>
+  <g opacity=".38" stroke="#ffffff" stroke-width="4" fill="none" stroke-linecap="round"><path d="M1180 790 C1240 740 1320 740 1400 680" stroke-dasharray="12 18"/><path d="M930 710 C850 650 780 660 725 600" stroke-dasharray="12 18"/></g>
+</svg>

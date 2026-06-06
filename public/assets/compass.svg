@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 220">
+  <defs><radialGradient id="r" cx="50%" cy="45%" r="65%"><stop stop-color="#fff9d6"/><stop offset=".75" stop-color="#f0b62c"/><stop offset="1" stop-color="#7c4a04"/></radialGradient><linearGradient id="b" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#1d4ed8"/><stop offset="1" stop-color="#06173e"/></linearGradient></defs>
+  <circle cx="110" cy="110" r="102" fill="url(#b)" stroke="#e8bb39" stroke-width="9"/>
+  <circle cx="110" cy="110" r="76" fill="url(#r)" stroke="#fff2a0" stroke-width="4"/>
+  <circle cx="110" cy="110" r="55" fill="#f8fbff" stroke="#335b9e" stroke-width="4"/>
+  <path d="M110 28 L129 100 L190 110 L129 120 L110 192 L91 120 L30 110 L91 100 Z" fill="#2563eb" stroke="#0f2d73" stroke-width="3"/>
+  <path d="M110 36 L120 100 L110 110 L100 100 Z" fill="#fff" opacity=".95"/>
+  <path d="M110 184 L100 120 L110 110 L120 120 Z" fill="#ef4444" opacity=".9"/>
+  <circle cx="110" cy="110" r="12" fill="#f59e0b" stroke="#7c2d12" stroke-width="3"/>
+  <text x="110" y="26" text-anchor="middle" font-size="20" font-family="Arial" font-weight="900" fill="#fff">N</text>
+</svg>

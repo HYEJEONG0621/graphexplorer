@@ -941,7 +941,25 @@ function getMiddle1Misconceptions(answers = {}) {
   if ([4, 5, 9].some((i) => direct[i] && direct[i] !== assessmentSets.direct.questions[i].answer)) add("directRatio", "정비례의 일정한 값 y÷x를 묻는 문항에서 오답이 있었습니다.");
   if ([0, 2, 3, 9].some((i) => inverse[i] && inverse[i] !== assessmentSets.inverse.questions[i].answer)) add("inverseProduct", "반비례의 식과 일정한 값 xy를 묻는 문항에서 오답이 있었습니다.");
   if ([4, 8].some((i) => inverse[i] && inverse[i] !== assessmentSets.inverse.questions[i].answer)) add("inverseAxis", "반비례 그래프의 좌표축 관계를 묻는 문항에서 오답이 있었습니다.");
-  return results.filter((item, index, arr) => arr.findIndex((other) => other.key === item.key) === index).slice(0, 4);
+  return results.filter((item, index, arr) => arr.findIndex((other) => other.key === item.key) === index);
+}
+
+function getMiddle1WrongItems(answers = {}) {
+  return Object.entries(assessmentSets).flatMap(([unitKey, set]) => {
+    const unitAnswers = answers[unitKey] || {};
+    return set.questions
+      .map((question, index) => ({
+        unitKey,
+        unitTitle: set.title,
+        index,
+        globalKey: `${unitKey}-${index}`,
+        selected: unitAnswers[index],
+        q: question.q,
+        answer: question.answer,
+        explain: question.explain,
+      }))
+      .filter((item) => item.selected && item.selected !== item.answer);
+  });
 }
 
 function getGradeMisconceptions(grade, data, answers = {}) {
@@ -957,7 +975,7 @@ function getGradeMisconceptions(grade, data, answers = {}) {
     if (/꼭짓점|축의 방정식|최댓값|최솟값/.test(wrongTexts)) add("vertexAxis", "꼭짓점, 축의 방정식, 최댓값·최솟값 문항에서 오답이 있었습니다.");
     if (/왼쪽|오른쪽|평행이동|x\+2/.test(wrongTexts)) add("shiftSign", "좌우 평행이동 방향을 해석하는 문항에서 오답이 있었습니다.");
   }
-  return results.filter((item, index, arr) => arr.findIndex((other) => other.key === item.key) === index).slice(0, 4);
+  return results.filter((item, index, arr) => arr.findIndex((other) => other.key === item.key) === index);
 }
 
 function getPrescriptionSteps({ gradeLabel = "중1", weakestTitle = "좌표와 그래프", misconceptionTitle = "기초 개념 확인", route = "개념학습" }) {
@@ -1030,7 +1048,11 @@ export default function App() {
       },
     };
     setGraphReflections(next);
-    if (!guestMode) localStorage.setItem("functionExplorerGraphReflections", JSON.stringify(next));
+
+    // 비회원 체험에서도 화면 이동 후 다시 확인할 수 있도록 브라우저에 저장합니다.
+    localStorage.setItem("functionExplorerGraphReflections", JSON.stringify(next));
+
+    // 로그인 사용자는 위 상태값이 Firestore 저장 useEffect를 통해 자동 반영됩니다.
   };
   const awardPoints = (amount) => {
     if (guestMode) return;
@@ -1223,8 +1245,8 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100 text-slate-800">
-      <div className="mx-auto flex min-h-screen max-w-[1500px] gap-3 p-3">
+    <div className="quest-bg min-h-screen text-slate-800">
+      <div className="mx-auto flex min-h-screen max-w-[1500px] gap-4 p-3">
         <Sidebar active={active} setActive={setActive} studentName={studentName} language={language} isAdmin={studentProfile.role === "admin"} />
         <main className="flex min-h-screen min-w-0 flex-1 flex-col gap-3">
           <Header activeTitle={activeTitle} setActive={setActive} expPoints={expPoints} grade={grade} setGrade={setGrade} studentName={studentName} onLogout={handleLogout} isGuest={guestMode} language={language} />
@@ -1602,51 +1624,152 @@ function AuthScreen({ onLoginSuccess, onGuestLogin }) {
 
 function Sidebar({ active, setActive, studentName = "학생 이름", language = "ko", isAdmin = false }) {
   const visibleNavItems = isAdmin ? [...navItems, adminNavItem] : navItems;
+
+  const questIcons = {
+    home: "🏠",
+    ai: "🤖",
+    ready: "📜",
+    concept: "📖",
+    explore: "🧪",
+    game: "🧰",
+    assessment: "🎯",
+    growth: "💎",
+    admin: "🔎",
+  };
+
   return (
-    <aside className="hidden w-48 shrink-0 rounded-[2rem] border border-blue-200 bg-gradient-to-b from-blue-50 via-white to-indigo-50 p-4 shadow-md lg:block">
-      <button onClick={() => setActive("home")} className="mb-7 flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left hover:bg-blue-50">
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-md shadow-blue-200"><Compass className="h-6 w-6" /></div>
-        <div><div className="font-extrabold text-blue-900">{studentName}</div></div>
+    <aside className="quest-sidebar hidden w-56 shrink-0 rounded-[2rem] p-4 lg:block">
+      <button
+        onClick={() => setActive("home")}
+        className="mb-6 flex w-full flex-col items-center justify-center rounded-[1.7rem] border border-amber-300/40 bg-slate-950/20 px-3 py-4 text-center transition hover:bg-slate-950/30"
+      >
+        <div className="relative flex h-20 w-20 items-center justify-center rounded-full border-4 border-amber-300 bg-gradient-to-br from-blue-900 to-slate-950 text-4xl shadow-lg">
+          🧭
+        </div>
+        <div className="mt-3 rounded-xl border border-amber-300/60 bg-blue-950/80 px-5 py-2 text-base font-black text-amber-100">
+          {studentName}
+        </div>
       </button>
+
       <nav className="space-y-2">
         {visibleNavItems.map((item) => {
           const Icon = item.icon;
           const isActive = active === item.id;
-          return <button key={item.id} onClick={() => setActive(item.id)} className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-bold transition ${isActive ? "bg-blue-600 text-white shadow-lg shadow-blue-200" : "text-slate-700 hover:bg-blue-50 hover:text-blue-700"}`}><Icon className="h-5 w-5 shrink-0" /><span className="whitespace-nowrap">{getUiText(language, item.labelKey)}</span></button>;
+
+          return (
+            <button
+              key={item.id}
+              onClick={() => setActive(item.id)}
+              className={`quest-nav-item flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-black transition ${isActive ? "active" : ""}`}
+            >
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/10 text-lg">
+                {questIcons[item.id] || <Icon className="h-5 w-5" />}
+              </span>
+              <span className="whitespace-nowrap">{getUiText(language, item.labelKey)}</span>
+            </button>
+          );
         })}
       </nav>
-      <div className="my-7 h-px bg-blue-100" />
-      <button onClick={() => setActive("settings")} className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left font-bold transition ${active === "settings" ? "bg-blue-600 text-white shadow-lg shadow-blue-200" : "text-slate-600 hover:bg-slate-50"}`}><Settings className="h-5 w-5" />{getUiText(language, "settings")}</button>
+
+      <div className="my-6 h-px bg-amber-200/30" />
+
+      <button
+        onClick={() => setActive("settings")}
+        className={`flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left font-black transition ${
+          active === "settings"
+            ? "border-amber-300 bg-blue-600 text-white shadow-lg"
+            : "border-amber-300/40 bg-[#f8e4b7] text-amber-950 hover:bg-[#fff0c7]"
+        }`}
+      >
+        <span className="text-xl">⚙️</span>
+        {getUiText(language, "settings")}
+      </button>
+
+      <div className="mt-5 rounded-2xl border border-amber-300/30 bg-slate-950/20 p-3 text-xs font-bold leading-relaxed text-amber-100">
+        🗺️ 오늘의 미션을 따라 함수 그래프를 탐험해요.
+      </div>
     </aside>
   );
 }
 
+
 function Header({ activeTitle, setActive, expPoints = 0, grade = "middle1", setGrade, studentName = "학생 이름", onLogout, isGuest = false, language = "ko" }) {
   const gradeLabels = { middle1: "중1", middle2: "중2", middle3: "중3" };
+
   const gradeTheme = {
-    middle1: { title: "좌표에서 시작하는 그래프 탐험대", units: "순서쌍 · 좌표 · 그래프 기초 · 정비례 · 반비례" },
-    middle2: { title: "일차함수 그래프 탐험대", units: "함수의 뜻 · 일차함수 · 기울기 · y절편 · 그래프 해석" },
-    middle3: { title: "이차함수 그래프 탐험대", units: "이차함수 · 포물선 · 꼭짓점 · 축 · 그래프 변환" },
+    middle1: {
+      title: "좌표에서 시작하는 그래프 탐험대",
+      units: "순서쌍 · 좌표 · 그래프 기초 · 정비례 · 반비례",
+    },
+    middle2: {
+      title: "일차함수 그래프 탐험대",
+      units: "함수의 뜻 · 일차함수 · 기울기 · y절편 · 그래프 해석",
+    },
+    middle3: {
+      title: "이차함수 그래프 탐험대",
+      units: "이차함수 · 포물선 · 꼭짓점 · 축 · 그래프 변환",
+    },
   };
+
   const currentTheme = gradeTheme[grade] || gradeTheme.middle1;
+
   return (
-    <header className="shrink-0 rounded-[1.5rem] border border-blue-200 bg-gradient-to-r from-white via-blue-50 to-indigo-50 px-5 py-3 shadow-md">
-      <div className="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
+    <header className="quest-header shrink-0 rounded-[1.8rem] px-5 py-4">
+      <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div>
-          <div className="text-sm font-bold text-blue-600">{currentTheme.units}</div>
-          <h1 className="mt-0.5 text-2xl font-black tracking-tight text-blue-950">{currentTheme.title}</h1>
-          <p className="mt-1 text-xs text-slate-500">{getUiText(language, "flow")}</p>
+          <div className="text-sm font-black text-blue-700">✧ {currentTheme.units}</div>
+          <h1 className="mt-1 text-3xl font-black tracking-tight text-blue-950">{currentTheme.title}</h1>
+          <p className="mt-1 text-sm font-bold text-slate-600">{getUiText(language, "flow")}</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-blue-50 p-2">
-          <div className="rounded-xl bg-white px-4 py-2 text-sm font-black text-blue-900 shadow-sm">🙂 {studentName}</div>
-          <div className="rounded-xl bg-white px-4 py-2 text-base font-black text-amber-700 shadow-sm">{isGuest ? getUiText(language, "guestMode") : `⭐ ${expPoints}P`}</div>
-          {Object.entries(gradeLabels).map(([key, label], idx) => <button key={key} onClick={() => { setGrade(key); setActive("home"); }} className={`rounded-xl px-6 py-2 text-base font-black transition ${grade === key ? "bg-blue-600 text-white shadow-md shadow-blue-200" : idx === 1 ? "text-green-700 hover:bg-white" : "text-purple-700 hover:bg-white"}`}>{label}</button>)}
-          <button onClick={onLogout} className="rounded-xl border border-rose-100 bg-white px-4 py-2 text-sm font-black text-rose-600 hover:bg-rose-50">{isGuest ? getUiText(language, "endGuest") : getUiText(language, "logout")}</button>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="rounded-2xl border border-amber-200 bg-white/80 px-4 py-2 text-sm font-black text-blue-950 shadow-sm">
+            🙂 {studentName}
+          </div>
+
+          <div className="quest-badge rounded-2xl px-5 py-2 text-base font-black">
+            {isGuest ? getUiText(language, "guestMode") : `⭐ ${expPoints}P`}
+          </div>
+
+          {Object.entries(gradeLabels).map(([key, label]) => {
+            const selected = grade === key;
+            const color =
+              key === "middle1"
+                ? "from-blue-600 to-blue-800"
+                : key === "middle2"
+                  ? "from-emerald-600 to-emerald-800"
+                  : "from-purple-600 to-purple-800";
+
+            return (
+              <button
+                key={key}
+                onClick={() => {
+                  setGrade(key);
+                  setActive("home");
+                }}
+                className={`rounded-2xl border-2 px-5 py-2 text-base font-black shadow-sm transition ${
+                  selected
+                    ? `border-amber-300 bg-gradient-to-b ${color} text-white`
+                    : "border-transparent bg-white/70 text-slate-700 hover:border-amber-300"
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+
+          <button
+            onClick={onLogout}
+            className="rounded-2xl border border-rose-200 bg-white/80 px-4 py-2 text-sm font-black text-rose-600 hover:bg-rose-50"
+          >
+            {isGuest ? getUiText(language, "endGuest") : getUiText(language, "logout")}
+          </button>
         </div>
       </div>
     </header>
   );
 }
+
 
 function AdminScreen() {
   const [students, setStudents] = useState([]);
@@ -1847,8 +1970,19 @@ function SettingsScreen({ language, setLanguage }) {
 }
 
 function MissionStatusBadge({ done }) {
-  return <div className={`rounded-2xl px-4 py-2 text-sm font-black ${done ? "bg-green-50 text-green-700" : "bg-slate-50 text-slate-500"}`}>{done ? "✅ 미션 완료" : "미션 대기"}</div>;
+  return (
+    <div
+      className={`rounded-2xl border px-4 py-2 text-sm font-black ${
+        done
+          ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+          : "border-amber-200 bg-amber-50 text-amber-700"
+      }`}
+    >
+      {done ? "✅ 미션 완료" : "⏳ 미션 대기"}
+    </div>
+  );
 }
+
 
 function HomeScreen({ setActive, expPoints = 0, isMissionComplete }) {
   const homeTiles = [
@@ -1859,6 +1993,9 @@ function HomeScreen({ setActive, expPoints = 0, isMissionComplete }) {
       icon: Star,
       color: "orange",
       value: `${expPoints}P`,
+      art: "⭐",
+      tag: "보상 현황",
+      className: "quest-home-card--points",
     },
     {
       title: "학습준비",
@@ -1868,6 +2005,9 @@ function HomeScreen({ setActive, expPoints = 0, isMissionComplete }) {
       action: "진단 시작",
       target: "ready",
       mission: "ready",
+      art: "📜",
+      tag: "출발 미션",
+      className: "quest-home-card--ready",
     },
     {
       title: "개념학습",
@@ -1877,6 +2017,9 @@ function HomeScreen({ setActive, expPoints = 0, isMissionComplete }) {
       action: "개념 익히기",
       target: "concept",
       mission: "concept",
+      art: "📖",
+      tag: "마법책",
+      className: "quest-home-card--concept",
     },
     {
       title: "AI 그래프 해석실",
@@ -1885,6 +2028,9 @@ function HomeScreen({ setActive, expPoints = 0, isMissionComplete }) {
       color: "purple",
       action: "해석실 열기",
       target: "ai",
+      art: "🤖",
+      tag: "AI 조력자",
+      className: "quest-home-card--ai",
     },
     {
       title: "탐구활동",
@@ -1894,6 +2040,9 @@ function HomeScreen({ setActive, expPoints = 0, isMissionComplete }) {
       action: "탐구하기",
       target: "explore",
       mission: "explore",
+      art: "🗺️",
+      tag: "탐험 지도",
+      className: "quest-home-card--explore",
     },
     {
       title: "게임존",
@@ -1902,6 +2051,9 @@ function HomeScreen({ setActive, expPoints = 0, isMissionComplete }) {
       color: "orange",
       action: "게임 시작",
       target: "game",
+      art: "🧰",
+      tag: "보물상자",
+      className: "quest-home-card--game",
     },
     {
       title: "형성평가",
@@ -1911,6 +2063,9 @@ function HomeScreen({ setActive, expPoints = 0, isMissionComplete }) {
       action: "평가 시작",
       target: "assessment",
       mission: "assessment",
+      art: "🎯",
+      tag: "도전 과녁",
+      className: "quest-home-card--assessment",
     },
     {
       title: "성장기록",
@@ -1919,31 +2074,55 @@ function HomeScreen({ setActive, expPoints = 0, isMissionComplete }) {
       color: "blue",
       action: "기록 보기",
       target: "growth",
+      art: "💎",
+      tag: "성장 크리스탈",
+      className: "quest-home-card--growth",
     },
   ];
 
   return (
-    <div className="grid h-full grid-cols-4 grid-rows-2 gap-3 overflow-hidden">
+    <div className="quest-home-grid grid h-full grid-cols-4 grid-rows-2 gap-3 overflow-hidden">
       {homeTiles.map((tile) => {
         const Icon = tile.icon;
         const isPointTile = tile.type === "points";
+        const done = tile.mission ? isMissionComplete(tile.mission) : false;
+
         return (
-          <Card key={tile.title} className={`p-5 ${isPointTile ? "bg-amber-50/90" : ""}`}>
-            <div className="flex h-full flex-col justify-between gap-4">
+          <Card key={tile.title} className={`quest-home-card ${tile.className} relative overflow-hidden p-5`}>
+            <div className="quest-home-card-glow" />
+            <div className="relative z-10 flex h-full flex-col justify-between gap-4">
               <div>
-                <IconBadge icon={Icon} color={tile.color} />
-                <h3 className="mt-4 text-xl font-black text-blue-950">{tile.title}</h3>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="quest-home-art" aria-hidden="true">{tile.art}</div>
+                  <div className="quest-home-tag">{tile.tag}</div>
+                </div>
+
+                <div className="mt-4 flex items-center gap-3">
+                  <IconBadge icon={Icon} color={tile.color} compact />
+                  <h3 className="text-xl font-black text-blue-950">{tile.title}</h3>
+                </div>
+
                 {isPointTile ? (
-                  <div className="mt-3 rounded-2xl bg-white px-4 py-3 text-3xl font-black text-amber-700 shadow-sm">⭐ {tile.value}</div>
-                ) : null}
-                <p className="mt-3 text-sm font-bold leading-relaxed text-slate-600">{tile.desc}</p>
+                  <div className="quest-point-display mt-4 flex items-center justify-center gap-3 rounded-2xl px-4 py-4 text-3xl font-black text-amber-800">
+                    <span className="text-4xl">⭐</span>
+                    <span>{tile.value}</span>
+                  </div>
+                ) : (
+                  <p className="mt-4 text-sm font-black leading-relaxed text-slate-700">{tile.desc}</p>
+                )}
               </div>
+
               {isPointTile ? (
-                <div className="rounded-2xl bg-white px-4 py-3 text-sm font-black text-amber-700">학습 미션을 완료하면 포인트가 올라가요.</div>
+                <div className="quest-note rounded-2xl px-4 py-3 text-sm font-black text-amber-800">
+                  학습 미션을 완료하면 포인트가 올라가요.
+                </div>
               ) : (
                 <div className="space-y-2">
-                  {tile.mission && <MissionStatusBadge done={isMissionComplete(tile.mission)} />}
-                  <button onClick={() => setActive(tile.target)} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-base font-black text-white shadow-lg shadow-blue-100 transition hover:bg-blue-700">
+                  {tile.mission && <MissionStatusBadge done={done} />}
+                  <button
+                    onClick={() => setActive(tile.target)}
+                    className="quest-button flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-base"
+                  >
                     {tile.action} <ChevronRight className="h-4 w-4" />
                   </button>
                 </div>
@@ -1975,7 +2154,7 @@ function FunctionGraphAssistant() {
   ];
 
   return (
-    <Card className="h-full overflow-hidden p-5">
+    <Card className="quest-ai-lab h-full overflow-hidden p-5">
       <div className="flex h-full min-h-0 flex-col gap-4">
         <div className="flex shrink-0 flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex items-center gap-3">
@@ -1989,7 +2168,7 @@ function FunctionGraphAssistant() {
         </div>
 
         <div className="grid min-h-0 flex-1 gap-4 xl:grid-cols-[380px_1fr]">
-          <div className="flex min-h-0 flex-col gap-4 overflow-hidden rounded-[1.7rem] border border-blue-100 bg-blue-50/60 p-5">
+          <div className="quest-ai-controls flex min-h-0 flex-col gap-4 overflow-hidden rounded-[1.7rem] border border-blue-100 bg-blue-50/60 p-5">
             <div>
               <label className="mb-2 block text-base font-black text-blue-950">함수식을 입력하세요.</label>
               <div className="relative">
@@ -2020,7 +2199,7 @@ function FunctionGraphAssistant() {
                     setParsed(parseMiddleSchoolFunction(sample.value));
                     setShowAnswer(false);
                   }}
-                  className="rounded-2xl border border-white bg-white px-4 py-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
+                  className="quest-ai-sample-card rounded-2xl border border-white bg-white px-4 py-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
                 >
                   <div className="text-xs font-black text-slate-500">{sample.label}</div>
                   <div className="mt-1 text-lg font-black text-blue-800">{sample.value}</div>
@@ -2028,7 +2207,7 @@ function FunctionGraphAssistant() {
               ))}
             </div>
 
-            <button onClick={runAnalyze} className="mt-auto flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-4 text-base font-black text-white shadow-lg shadow-blue-100 transition hover:bg-blue-700">
+            <button onClick={runAnalyze} className="quest-button mt-auto flex w-full items-center justify-center gap-2 rounded-2xl px-6 py-4 text-base font-black transition">
               <Sparkles className="h-5 w-5" /> AI 그래프 해석 시작
             </button>
 
@@ -2047,7 +2226,7 @@ function FunctionGraphAssistant() {
 
 function AnalysisCard({ analysis, showAnswer, setShowAnswer }) {
   return (
-    <div className="shrink-0 rounded-[1.5rem] border border-blue-100 bg-white p-4">
+    <div className="quest-analysis-card shrink-0 rounded-[1.5rem] border border-blue-100 bg-white p-4">
       <div className="mb-3 flex items-center justify-between gap-3">
         <h4 className="text-lg font-black text-blue-950">그래프에서 확인할 점</h4>
         <div className="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">개념 해석</div>
@@ -2077,7 +2256,7 @@ function AnalysisCard({ analysis, showAnswer, setShowAnswer }) {
 
 function FunctionGraphCanvas({ parsed, analysis }) {
   if (!analysis || !parsed || parsed.error) {
-    return <div className="rounded-[1.5rem] border border-blue-100 bg-white p-8 text-center text-slate-500">함수식을 입력하면 그래프가 나타납니다.</div>;
+    return <div className="quest-graph-canvas quest-empty-graph rounded-[1.5rem] border border-blue-100 bg-white p-8 text-center text-slate-500">함수식을 입력하면 그래프가 나타납니다.</div>;
   }
 
   const size = 460;
@@ -2117,10 +2296,10 @@ function FunctionGraphCanvas({ parsed, analysis }) {
   const ticks = Array.from({ length: 21 }, (_, index) => -5 + index * 0.5);
 
   return (
-    <div className="h-full overflow-hidden rounded-[1.5rem] border border-blue-100 bg-white p-4">
+    <div className="quest-graph-canvas h-full overflow-hidden rounded-[1.5rem] border border-blue-100 bg-white p-4">
       <div className="mb-2 text-lg font-black text-blue-950">그래프: {analysis.title}</div>
       <div className="flex h-[calc(100%-36px)] items-center justify-center rounded-2xl bg-slate-50 p-2">
-        <svg viewBox={`0 0 ${size} ${size}`} className="h-full max-h-full w-auto rounded-2xl bg-white">
+        <svg viewBox={`0 0 ${size} ${size}`} className="quest-graph-svg h-full max-h-full w-auto rounded-2xl bg-white">
           <defs>
             <clipPath id="ai-graph-clip">
               <rect x={padding} y={padding} width={plotSize} height={plotSize} />
@@ -2195,6 +2374,8 @@ function ReadyScreen({ setActive, completeMission, isMissionComplete }) {
     {
       id: "coordinate",
       title: "좌표 읽기",
+      badge: "진단 1",
+      icon: "🧭",
       q: "점 A(-3, 2)에서 x좌표와 y좌표를 바르게 말한 것은?",
       choices: ["x=2, y=-3", "x=-3, y=2", "x=3, y=-2", "x=-2, y=3"],
       answer: "x=-3, y=2",
@@ -2204,6 +2385,8 @@ function ReadyScreen({ setActive, completeMission, isMissionComplete }) {
     {
       id: "quadrant",
       title: "사분면 구분",
+      badge: "진단 2",
+      icon: "🗺️",
       q: "x좌표가 음수이고 y좌표가 양수인 점은 어느 사분면에 있나요?",
       choices: ["제1사분면", "제2사분면", "제3사분면", "제4사분면"],
       answer: "제2사분면",
@@ -2213,6 +2396,8 @@ function ReadyScreen({ setActive, completeMission, isMissionComplete }) {
     {
       id: "relation",
       title: "정비례 판단",
+      badge: "진단 3",
+      icon: "⚖️",
       q: "정비례 관계에서 항상 일정한 값은 무엇인가요?",
       choices: ["x+y", "x-y", "y÷x", "xy"],
       answer: "y÷x",
@@ -2222,6 +2407,8 @@ function ReadyScreen({ setActive, completeMission, isMissionComplete }) {
     {
       id: "inverseRelation",
       title: "반비례 판단",
+      badge: "진단 4",
+      icon: "💎",
       q: "반비례 관계에서 항상 일정한 값은 무엇인가요?",
       choices: ["x+y", "x-y", "y÷x", "xy"],
       answer: "xy",
@@ -2235,38 +2422,45 @@ function ReadyScreen({ setActive, completeMission, isMissionComplete }) {
   const score = readinessQuestions.reduce((sum, item) => sum + (answers[item.id] === item.answer ? 1 : 0), 0);
   const firstWrong = readinessQuestions.find((item) => answers[item.id] && answers[item.id] !== item.answer);
   const allAnswered = readinessQuestions.every((item) => answers[item.id]);
+  const progressText = submitted ? `${score}/4` : `${Object.keys(answers).length}/4`;
 
   const recommendation = !submitted
     ? "네 문항에 답하면 오늘의 출발 학습을 추천합니다."
     : score === 4
-      ? "기초 준비가 잘 되어 있습니다. 그래프 탐험대에서 표 → 그래프 연결 활동으로 바로 시작해도 좋습니다."
+      ? "기초 준비가 잘 되어 있습니다. 탐구활동 또는 AI 그래프 해석실로 바로 이동해도 좋습니다."
       : firstWrong?.recommend || "기초 개념을 확인한 뒤 개념학습으로 이동해 보세요.";
 
   return (
-    <Card className="h-full overflow-hidden p-5">
+    <Card className="quest-ready-screen h-full overflow-hidden p-5">
       <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div>
-          <h2 className="text-2xl font-black text-blue-950">학습준비: 사전 진단</h2>
-          <p className="mt-1 text-sm text-slate-500">좌표, 사분면, 정비례·반비례의 기초 이해를 빠르게 확인하고 맞춤 출발점을 추천합니다.</p>
+          <div className="text-sm font-black text-blue-700">✦ 오늘의 출발 퀘스트</div>
+          <h2 className="text-3xl font-black tracking-tight text-blue-950">학습준비: 사전 진단</h2>
+          <p className="mt-1 text-sm font-bold text-slate-600">좌표, 사분면, 정비례·반비례의 기초 이해를 빠르게 확인하고 맞춤 출발점을 추천합니다.</p>
         </div>
-        <div className="rounded-2xl bg-blue-50 px-5 py-3 text-sm font-black text-blue-700">
-          준비 진단 {submitted ? `${score}/4` : "0/4"}
+        <div className="quest-progress-badge rounded-2xl px-5 py-3 text-sm font-black">
+          준비 진단 {progressText}
         </div>
       </div>
 
-      <div className="grid h-[calc(100%-84px)] min-h-0 gap-4 xl:grid-cols-[1fr_340px]">
+      <div className="grid h-[calc(100%-88px)] min-h-0 gap-4 xl:grid-cols-[1fr_340px]">
         <div className="grid min-h-0 grid-cols-2 grid-rows-2 gap-3 overflow-hidden">
-          {readinessQuestions.map((item, index) => {
+          {readinessQuestions.map((item) => {
             const selected = answers[item.id];
             const isCorrect = selected === item.answer;
             return (
-              <div key={item.id} className="rounded-[1.7rem] border border-blue-100 bg-white p-4 shadow-sm">
-                <div className="mb-3 flex items-center justify-between">
-                  <div className="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">진단 {index + 1}</div>
-                  <div className="text-xs font-black text-slate-500">{item.title}</div>
+              <div key={item.id} className="quest-diagnosis-card flex min-h-0 flex-col rounded-[1.7rem] p-4">
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <div className="quest-mini-icon flex h-10 w-10 items-center justify-center rounded-2xl text-xl">{item.icon}</div>
+                    <div className="quest-ribbon rounded-xl px-3 py-1 text-xs font-black">{item.badge}</div>
+                  </div>
+                  <div className="rounded-full border border-amber-300 bg-white/80 px-3 py-1 text-xs font-black text-amber-800">{item.title}</div>
                 </div>
-                <h3 className="min-h-[58px] text-base font-black leading-snug text-blue-950">{item.q}</h3>
-                <div className="mt-4 space-y-2">
+
+                <h3 className="min-h-[54px] text-base font-black leading-snug text-blue-950">{item.q}</h3>
+
+                <div className="mt-3 grid flex-1 content-start gap-2">
                   {item.choices.map((choice) => (
                     <button
                       key={choice}
@@ -2274,16 +2468,17 @@ function ReadyScreen({ setActive, completeMission, isMissionComplete }) {
                         setAnswers((prev) => ({ ...prev, [item.id]: choice }));
                         setSubmitted(false);
                       }}
-                      className={`w-full rounded-2xl border px-3 py-2 text-left text-sm font-bold transition ${
-                        selected === choice ? "border-blue-500 bg-blue-600 text-white" : "border-blue-100 bg-slate-50 text-slate-700 hover:bg-blue-50"
+                      className={`quest-choice-button rounded-2xl border px-3 py-2 text-left text-sm font-black transition ${
+                        selected === choice ? "selected" : ""
                       }`}
                     >
                       {choice}
                     </button>
                   ))}
                 </div>
+
                 {submitted && selected && (
-                  <div className={`mt-3 rounded-2xl px-3 py-2 text-xs font-bold ${isCorrect ? "bg-green-50 text-green-800" : "bg-rose-50 text-rose-800"}`}>
+                  <div className={`mt-3 rounded-2xl px-3 py-2 text-xs font-bold ${isCorrect ? "bg-emerald-50 text-emerald-800" : "bg-rose-50 text-rose-800"}`}>
                     {isCorrect ? "정답입니다. " : `정답: ${item.answer}. `}{item.feedback}
                   </div>
                 )}
@@ -2292,20 +2487,26 @@ function ReadyScreen({ setActive, completeMission, isMissionComplete }) {
           })}
         </div>
 
-        <div className="space-y-3 overflow-hidden rounded-[1.7rem] border border-blue-100 bg-blue-50/60 p-4">
-          <div className="rounded-2xl bg-white p-4">
-            <h3 className="text-xl font-black text-blue-950">오늘의 추천 출발점</h3>
-            <div className="mt-3 rounded-2xl bg-slate-50 px-4 py-4 text-sm font-bold leading-relaxed text-slate-700">
+        <aside className="quest-advice-panel flex min-h-0 flex-col overflow-hidden rounded-[1.7rem] p-4">
+          <div className="rounded-[1.5rem] border border-amber-200 bg-white/75 p-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-purple-100 text-3xl">🧙‍♂️</div>
+              <div>
+                <h3 className="text-xl font-black text-blue-950">오늘의 추천 출발점</h3>
+                <div className="text-xs font-black text-purple-700">순서쌍의 퀘스트 안내</div>
+              </div>
+            </div>
+            <div className="mt-3 rounded-2xl bg-slate-50/90 px-4 py-4 text-sm font-bold leading-relaxed text-slate-700">
               {recommendation}
             </div>
           </div>
 
-          <div className="rounded-2xl bg-white p-4">
+          <div className="mt-3 rounded-[1.5rem] border border-amber-200 bg-white/75 p-4 shadow-sm">
             <h3 className="font-black text-blue-950">진단 결과 기준</h3>
-            <div className="mt-3 space-y-2 text-sm font-bold text-slate-700">
-              <div>• 4개 정답: 탐구활동 또는 그래프 해석실로 이동</div>
-              <div>• 2~3개 정답: 개념학습에서 부족한 부분 확인</div>
-              <div>• 0개 정답: 순서쌍과 좌표부터 차근차근 학습</div>
+            <div className="mt-3 space-y-2 text-sm font-bold leading-relaxed text-slate-700">
+              <div>✦ 4개 정답: 탐구활동 또는 그래프 해석실로 이동</div>
+              <div>✦ 2~3개 정답: 개념학습에서 부족한 부분 확인</div>
+              <div>✦ 0~1개 정답: 순서쌍과 좌표부터 차근차근 학습</div>
             </div>
           </div>
 
@@ -2315,14 +2516,14 @@ function ReadyScreen({ setActive, completeMission, isMissionComplete }) {
               completeMission("ready", 20);
             }}
             disabled={!allAnswered}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-base font-black text-white shadow-lg shadow-blue-200 transition hover:bg-blue-700 disabled:opacity-40"
+            className="quest-button mt-3 flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-3 text-base disabled:cursor-not-allowed disabled:opacity-40"
           >
             <CheckCircle2 className="h-5 w-5" /> 진단 결과 확인
           </button>
 
           {submitted && (
-            <div className="grid gap-2">
-              <div className="rounded-2xl bg-green-50 px-4 py-3 text-sm font-black text-green-700">✅ 학습준비 미션 완료 · +20P</div>
+            <div className="mt-3 grid gap-2">
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-black text-emerald-700">✅ 학습준비 미션 완료 · +20P</div>
               <button onClick={() => setActive(score === 4 ? "explore" : "concept")} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 font-black text-white shadow-lg shadow-emerald-100">
                 추천 학습으로 이동 <ChevronRight className="h-5 w-5" />
               </button>
@@ -2331,7 +2532,11 @@ function ReadyScreen({ setActive, completeMission, isMissionComplete }) {
               </button>
             </div>
           )}
-        </div>
+
+          <div className="mt-auto hidden rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-xs font-black leading-relaxed text-amber-900 xl:block">
+            🗺️ 네 개의 진단 관문을 통과하면 오늘의 학습 경로가 열립니다.
+          </div>
+        </aside>
       </div>
     </Card>
   );
@@ -2341,10 +2546,132 @@ function ConceptScreen({ selectedConcept, setSelectedConcept, completeMission, i
   const lesson = selectedConcept ? conceptLessons[selectedConcept] : null;
   const [directA, setDirectA] = useState(2);
   const [inverseA, setInverseA] = useState(4);
+
+  const conceptQuestMeta = {
+    orderedPair: {
+      badge: "좌표 입문",
+      icon: "🧙‍♂️",
+      subIcon: "📜",
+      panel: "(x, y)",
+      tone: "blue",
+      hint: "첫 번째 수는 x좌표, 두 번째 수는 y좌표예요.",
+    },
+    plane: {
+      badge: "좌표 지도",
+      icon: "🔭",
+      subIcon: "🔮",
+      panel: "axes",
+      tone: "sky",
+      hint: "x축, y축, 원점, 사분면을 함께 확인해요.",
+    },
+    direct: {
+      badge: "정비례 마법식",
+      icon: "🧪",
+      subIcon: "🪶",
+      panel: "y = ax",
+      tone: "emerald",
+      hint: "y÷x가 일정하고 그래프는 원점을 지나요.",
+    },
+    inverse: {
+      badge: "반비례 보물식",
+      icon: "💰",
+      subIcon: "📖",
+      panel: "y = a/x",
+      tone: "violet",
+      hint: "xy가 일정하고 그래프는 좌표축에 가까워져요.",
+    },
+  };
+
   if (!lesson) {
-    return <Card className="h-full p-5"><div className="mb-4 flex items-end justify-between"><div><h2 className="text-2xl font-black text-blue-950">개념을 차근차근 익혀요!</h2><p className="mt-1 text-sm text-slate-500">상황, 표, 식, 그래프를 연결하면서 함수 개념을 익힙니다.</p></div><div className="rounded-2xl bg-purple-50 px-4 py-2 text-sm font-black text-purple-700">표상 연결 중심</div></div><div className="grid h-[calc(100%-82px)] gap-4 grid-cols-2 grid-rows-2">{conceptCards.map((card) => <button key={card.id} onClick={() => setSelectedConcept(card.id)} className="group rounded-[1.7rem] border border-blue-100 bg-white p-4 text-center shadow-sm transition hover:-translate-y-1 hover:border-blue-300 hover:shadow-lg"><div className="mx-auto flex h-24 items-center justify-center rounded-2xl bg-blue-50 text-3xl font-black text-blue-700">{card.visual === "axes" ? <AxesMini /> : <span>{card.visual}</span>}</div><h3 className="mt-3 text-lg font-black text-blue-950">{card.title}</h3><p className="mt-1 min-h-[32px] text-sm text-slate-500">{card.desc}</p><div className="mt-3 inline-flex rounded-xl bg-blue-600 px-5 py-2 font-black text-white group-hover:bg-blue-700">학습하기</div></button>)}</div></Card>;
+    return (
+      <Card className="concept-quest-screen h-full overflow-hidden p-5">
+        <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
+          <div>
+            <div className="quest-section-kicker">✧ 개념 도감 퀘스트</div>
+            <h2 className="text-3xl font-black text-blue-950">개념을 차근차근 익혀요!</h2>
+            <p className="mt-1 text-sm font-bold text-slate-600">상황, 표, 식, 그래프를 연결하면서 함수 개념을 익힙니다.</p>
+          </div>
+          <div className="quest-small-banner">✦ 표상 연결 중심</div>
+        </div>
+
+        <div className="concept-quest-grid h-[calc(100%-86px)]">
+          {conceptCards.map((card) => {
+            const meta = conceptQuestMeta[card.id] || conceptQuestMeta.orderedPair;
+            return (
+              <button
+                key={card.id}
+                onClick={() => setSelectedConcept(card.id)}
+                className={`concept-quest-card concept-tone-${meta.tone} group`}
+              >
+                <div className="concept-card-topline">
+                  <span className="concept-side-icon">{meta.icon}</span>
+                  <span className="concept-badge-label">{meta.badge}</span>
+                </div>
+
+                <div className="concept-magic-row">
+                  <div className="concept-decoration left">{meta.icon}</div>
+                  <div className="concept-magic-panel">
+                    {meta.panel === "axes" ? <AxesMini /> : <span>{meta.panel}</span>}
+                  </div>
+                  <div className="concept-decoration right">{meta.subIcon}</div>
+                </div>
+
+                <h3 className="mt-3 text-2xl font-black text-blue-950">{card.title}</h3>
+                <p className="mt-1 text-sm font-bold text-slate-600">{card.desc}</p>
+                <div className="mt-2 rounded-2xl bg-white/55 px-3 py-2 text-xs font-black text-slate-600">{meta.hint}</div>
+
+                <div className="concept-learn-button mt-auto">
+                  학습하기 <ChevronRight className="h-4 w-4" />
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </Card>
+    );
   }
-  return <Card className="h-full overflow-hidden p-5"><div className="mb-3 flex items-start justify-between gap-3"><div><button onClick={() => setSelectedConcept(null)} className="mb-2 rounded-2xl border border-blue-200 bg-white px-4 py-2 text-sm font-black text-blue-700 hover:bg-blue-50">← 개념 목록으로</button><h2 className="text-2xl font-black text-blue-950">{lesson.title}</h2><p className="mt-1 text-sm text-slate-500">{lesson.subtitle}</p></div><div className="flex items-center gap-2"><MissionStatusBadge done={isMissionComplete("concept")} /><button onClick={() => completeMission("concept", 20)} disabled={isMissionComplete("concept")} className="rounded-2xl bg-green-600 px-4 py-3 text-sm font-black text-white shadow-lg shadow-green-100 disabled:bg-green-100 disabled:text-green-700">{isMissionComplete("concept") ? "완료됨" : "개념학습 완료 +20P"}</button><div className="rounded-[1.5rem] bg-blue-50 px-5 py-3 text-center text-xl font-black text-blue-700">{lesson.expression}</div></div></div><div className="h-[calc(100%-95px)] overflow-hidden">{selectedConcept === "direct" ? <DirectProportionExplorer a={directA} setA={setDirectA} /> : selectedConcept === "inverse" ? <InverseProportionExplorer a={inverseA} setA={setInverseA} /> : <ConceptLessonBody lesson={lesson} />}</div></Card>;
+
+  const currentMeta = conceptQuestMeta[selectedConcept] || conceptQuestMeta.orderedPair;
+
+  return (
+    <Card className="concept-quest-detail h-full overflow-hidden p-5">
+      <div className="mb-3 flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+        <div>
+          <button
+            onClick={() => setSelectedConcept(null)}
+            className="mb-2 rounded-2xl border border-amber-300 bg-white/80 px-4 py-2 text-sm font-black text-blue-800 shadow-sm hover:bg-amber-50"
+          >
+            ← 개념 도감으로
+          </button>
+          <div className="quest-section-kicker">✧ {currentMeta.badge}</div>
+          <h2 className="text-3xl font-black text-blue-950">{lesson.title}</h2>
+          <p className="mt-1 text-sm font-bold text-slate-600">{lesson.subtitle}</p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <MissionStatusBadge done={isMissionComplete("concept")} />
+          <button
+            onClick={() => completeMission("concept", 20)}
+            disabled={isMissionComplete("concept")}
+            className="quest-complete-button rounded-2xl px-4 py-3 text-sm font-black disabled:opacity-60"
+          >
+            {isMissionComplete("concept") ? "완료됨" : "개념학습 완료 +20P"}
+          </button>
+          <div className="concept-expression-badge">{lesson.expression}</div>
+        </div>
+      </div>
+
+      <div className="h-[calc(100%-112px)] overflow-hidden">
+        {selectedConcept === "direct" ? (
+          <DirectProportionExplorer a={directA} setA={setDirectA} />
+        ) : selectedConcept === "inverse" ? (
+          <InverseProportionExplorer a={inverseA} setA={setInverseA} />
+        ) : (
+          <ConceptLessonBody lesson={lesson} />
+        )}
+      </div>
+    </Card>
+  );
 }
 
 function ConceptLessonBody({ lesson }) {
@@ -2749,9 +3076,10 @@ function ExploreScreen({ completeMission, isMissionComplete, reflection, onSaveR
   const pointsToShow = mode === "table" ? tablePoints : plottedPoints;
 
   return (
-    <Card className="h-full overflow-hidden p-5">
-      <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+    <Card className="quest-explore-shell h-full overflow-hidden p-5">
+      <div className="quest-explore-header mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div>
+          <div className="quest-section-kicker">🗺️ 좌표 지도 탐험 퀘스트</div>
           <h2 className="text-2xl font-black text-blue-950">그래프 탐험대</h2>
           <p className="mt-1 text-sm text-slate-500">좌표를 찍는 데서 끝나지 않고, 표의 값을 그래프로 연결하며 함수의 모양을 탐험합니다.</p>
         </div>
@@ -2764,8 +3092,8 @@ function ExploreScreen({ completeMission, isMissionComplete, reflection, onSaveR
         </div>
       </div>
 
-      <div className="grid h-[calc(100%-86px)] min-h-0 gap-4 xl:grid-cols-[1fr_380px]">
-        <div className="rounded-[1.7rem] border border-blue-100 bg-white p-4 shadow-sm">
+      <div className="quest-explore-grid grid h-[calc(100%-86px)] min-h-0 gap-4 xl:grid-cols-[1fr_380px]">
+        <div className="quest-explore-plane-wrap rounded-[1.7rem] border border-blue-100 bg-white p-4 shadow-sm">
           <ExplorationPlane
             points={pointsToShow}
             mode={mode}
@@ -2775,7 +3103,7 @@ function ExploreScreen({ completeMission, isMissionComplete, reflection, onSaveR
           />
         </div>
 
-        <div className="space-y-3 overflow-hidden rounded-[1.7rem] border border-blue-100 bg-blue-50/50 p-4">
+        <div className="quest-explore-side space-y-3 overflow-hidden rounded-[1.7rem] border border-blue-100 bg-blue-50/50 p-4">
           {mode === "mission" && (
             <div className="rounded-2xl bg-white p-4">
               <h3 className="text-lg font-black text-blue-950">{mission.title}</h3>
@@ -2868,7 +3196,7 @@ function ExplorationPlane({ points, mode, tableType, drawLine = false, tableA = 
   const ticks = Array.from({ length: Math.floor((max - min) / tickStep) + 1 }, (_, index) => min + index * tickStep);
 
   return (
-    <svg viewBox={`0 0 ${size} ${size}`} className="h-full max-h-[560px] w-full rounded-2xl bg-slate-50">
+    <svg viewBox={`0 0 ${size} ${size}`} className="quest-coordinate-plane h-full max-h-[560px] w-full rounded-2xl bg-slate-50">
       <defs>
         <clipPath id="explore-clip"><rect x="0" y="0" width={size} height={size} /></clipPath>
       </defs>
@@ -2934,7 +3262,7 @@ function GameScreen({ awardPoints, expPoints }) {
 
   if (!gameMode) {
     return (
-      <Card className="h-full overflow-hidden p-5">
+      <Card className="quest-game-zone h-full overflow-hidden p-5">
         <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <div>
             <h2 className="text-2xl font-black text-blue-950">게임존</h2>
@@ -2944,7 +3272,7 @@ function GameScreen({ awardPoints, expPoints }) {
         </div>
         <div className="grid h-[calc(100%-84px)] min-h-0 grid-cols-2 grid-rows-2 gap-4">
           {games.map((game) => (
-            <button key={game.id} onClick={() => setGameMode(game.id)} className="group rounded-[2rem] border border-blue-200 bg-gradient-to-br from-white to-blue-50 p-5 text-left shadow-sm transition hover:-translate-y-1 hover:border-blue-300 hover:shadow-lg">
+            <button key={game.id} onClick={() => setGameMode(game.id)} className="quest-game-select-card group rounded-[2rem] border border-blue-200 bg-gradient-to-br from-white to-blue-50 p-5 text-left shadow-sm transition hover:-translate-y-1 hover:border-blue-300 hover:shadow-lg">
               <div className="flex h-full flex-col justify-between gap-4">
                 <div>
                   <div className="flex h-16 w-16 items-center justify-center rounded-[1.25rem] bg-blue-50 text-3xl transition group-hover:scale-105">{game.icon}</div>
@@ -2963,7 +3291,7 @@ function GameScreen({ awardPoints, expPoints }) {
   }
 
   return (
-    <div className="grid h-full grid-rows-[46px_1fr] gap-2 overflow-hidden rounded-[2rem] border border-blue-100 bg-white/90 p-2 shadow-sm">
+    <div className="quest-game-stage quest-game-stage-linear grid h-full grid-rows-[46px_1fr] gap-2 overflow-hidden rounded-[2rem] border border-blue-100 bg-white/90 p-2 shadow-sm">
       <div className="flex items-center justify-end rounded-[1.25rem] bg-blue-50/70 px-3">
         <button onClick={() => setGameMode(null)} className="rounded-2xl border border-blue-200 bg-white px-4 py-2 text-xs font-black text-blue-700 shadow-sm hover:bg-blue-50">
           ← 게임 선택
@@ -3819,26 +4147,128 @@ function AssessmentScreen({ answers, setAnswers, completeMission, isMissionCompl
   const set = assessmentSets[unit];
   const question = set.questions[current];
   const selected = answers[unit]?.[current];
+  const total = set.questions.length;
   const score = set.questions.reduce((sum, q, index) => sum + (answers[unit]?.[index] === q.answer ? 1 : 0), 0);
-  const chooseUnit = (key) => { setUnit(key); setCurrent(0); setShowResult(false); };
+  const solved = set.questions.reduce((sum, _q, index) => sum + (answers[unit]?.[index] ? 1 : 0), 0);
+  const chooseUnit = (key) => {
+    setUnit(key);
+    setCurrent(0);
+    setShowResult(false);
+  };
   const chooseAnswer = (choice) => setAnswers((prev) => ({ ...prev, [unit]: { ...(prev[unit] || {}), [current]: choice } }));
-  const next = () => { if (current < 9) setCurrent((prev) => prev + 1); else setShowResult(true); };
+  const next = () => { if (current < total - 1) setCurrent((prev) => prev + 1); else setShowResult(true); };
   const prev = () => setCurrent((prev) => Math.max(0, prev - 1));
+  const progress = Math.round(((current + 1) / total) * 100);
 
-  return <Card className="h-full overflow-hidden p-5"><div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between"><div><h2 className="text-2xl font-black text-blue-950">형성평가</h2><p className="mt-1 text-sm text-slate-500">개념별 10문항씩 제공됩니다.</p><div className="mt-2"><MissionStatusBadge done={isMissionComplete("assessment")} /></div></div><div className="grid gap-2 md:grid-cols-3">{Object.entries(assessmentSets).map(([key, value]) => <button key={key} onClick={() => chooseUnit(key)} className={`rounded-2xl px-4 py-3 text-sm font-black transition ${unit === key ? "bg-blue-600 text-white shadow-md shadow-blue-200" : "bg-blue-50 text-blue-800 hover:bg-white"}`}>{value.title}</button>)}</div></div><div className="grid h-[calc(100%-84px)] min-h-0 gap-4 xl:grid-cols-[1fr_330px]"><div className="rounded-[1.7rem] border border-blue-100 bg-blue-50/50 p-5"><div className="flex items-center justify-between"><div className="text-sm font-black text-blue-700">{set.title} · 문제 {current + 1} / 10</div><div className="rounded-full bg-white px-4 py-2 text-sm font-black text-blue-700">현재 점수 {score}/10</div></div><div className="mt-4 h-3 overflow-hidden rounded-full bg-white"><div className="h-full rounded-full bg-blue-600" style={{ width: `${((current + 1) / 10) * 100}%` }} /></div>{showResult ? <div className="mt-6 rounded-[1.5rem] bg-white p-6 text-center"><div className="text-4xl font-black text-blue-700">{score} / 10</div><p className="mt-3 font-bold text-slate-700">{score >= 8 ? "잘했어요! 핵심 개념을 잘 이해하고 있어요." : "오답을 확인하고 다시 도전해 보세요."}</p><div className="mt-4 rounded-2xl bg-green-50 px-4 py-3 text-sm font-black text-green-700">✅ 형성평가 미션 완료 · +30P</div><button onClick={() => completeMission("assessment", 30)} disabled={isMissionComplete("assessment")} className="mt-4 rounded-2xl bg-green-600 px-6 py-3 font-black text-white disabled:bg-green-100 disabled:text-green-700">{isMissionComplete("assessment") ? "포인트 지급 완료" : "미션 완료 확인"}</button><button onClick={() => { setShowResult(false); setCurrent(0); }} className="mt-5 ml-2 rounded-2xl bg-blue-600 px-6 py-3 font-black text-white">다시 풀기</button></div> : <div className="mt-5 rounded-[1.5rem] bg-white p-6"><h3 className="text-xl font-black text-slate-800">{question.q}</h3><div className="mt-5 grid gap-3 md:grid-cols-2">{question.choices.map((choice) => <button key={choice} onClick={() => chooseAnswer(choice)} className={`rounded-2xl border px-5 py-4 text-left font-black transition ${selected === choice ? "border-blue-500 bg-blue-600 text-white shadow-md shadow-blue-200" : "border-blue-100 bg-white hover:border-blue-300 hover:bg-blue-50"}`}>{choice}</button>)}</div>{selected && <div className={`mt-5 rounded-2xl px-5 py-4 text-sm font-bold ${selected === question.answer ? "bg-green-50 text-green-800" : "bg-rose-50 text-rose-800"}`}>{selected === question.answer ? "정답입니다! " : "다시 확인해 보세요. "}{question.explain}</div>}<div className="mt-5 flex justify-between"><button onClick={prev} className="rounded-2xl border border-blue-200 bg-white px-5 py-3 font-black text-blue-700">이전</button><button onClick={next} disabled={!selected} className="rounded-2xl bg-blue-600 px-6 py-3 font-black text-white disabled:opacity-40">{current === 9 ? "결과 보기" : "다음"}</button></div></div>}</div><AssessmentSidePanel set={set} answers={answers[unit] || {}} current={current} setCurrent={setCurrent} /></div></Card>;
+  return (
+    <Card className="quest-assessment-page h-full overflow-hidden p-5">
+      <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+        <div>
+          <div className="text-xs font-black text-blue-700">✦ 평가 관문 퀘스트</div>
+          <h2 className="text-2xl font-black text-blue-950">형성평가</h2>
+          <p className="mt-1 text-sm font-bold text-slate-600">개념별 10문항을 풀며 오늘의 이해도를 점검합니다.</p>
+          <div className="mt-2"><MissionStatusBadge done={isMissionComplete("assessment")} /></div>
+        </div>
+        <div className="quest-unit-tabs grid gap-2 md:grid-cols-3">
+          {Object.entries(assessmentSets).map(([key, value]) => (
+            <button
+              key={key}
+              onClick={() => chooseUnit(key)}
+              className={`rounded-2xl px-4 py-3 text-sm font-black transition ${unit === key ? "active" : ""}`}
+            >
+              {key === "coordinate" ? "🧭" : key === "direct" ? "⚖️" : "💎"} {value.title}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="quest-assessment-grid grid h-[calc(100%-92px)] min-h-0 gap-4 xl:grid-cols-[1fr_330px]">
+        <div className="quest-assessment-board min-h-0 overflow-hidden rounded-[1.7rem] p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-black text-blue-700">{set.title} · 문제 {current + 1} / {total}</div>
+              <div className="mt-1 text-xs font-bold text-slate-500">결과 보기 전까지 정답과 해설은 보이지 않아요.</div>
+            </div>
+            <div className="quest-score-chip rounded-2xl px-4 py-2 text-sm font-black">현재 점수 {score}/{total}</div>
+          </div>
+
+          <div className="quest-progress-rail mt-4"><div style={{ width: `${progress}%` }} /></div>
+
+          {showResult ? (
+            <div className="quest-result-card mt-5 rounded-[1.5rem] p-6 text-center">
+              <div className="text-5xl">🏆</div>
+              <div className="mt-2 text-4xl font-black text-blue-700">{score} / {total}</div>
+              <p className="mt-3 font-bold text-slate-700">{score >= 8 ? "잘했어요! 핵심 개념을 잘 이해하고 있어요." : "오답을 확인하고 성장기록에서 추천 복습을 확인하세요."}</p>
+              <div className="mt-4 rounded-2xl bg-green-50 px-4 py-3 text-sm font-black text-green-700">✅ 형성평가 미션 완료 · +30P</div>
+              <div className="mt-5 flex flex-wrap justify-center gap-2">
+                <button onClick={() => completeMission("assessment", 30)} disabled={isMissionComplete("assessment")} className="quest-button rounded-2xl px-6 py-3 font-black disabled:opacity-50">
+                  {isMissionComplete("assessment") ? "포인트 지급 완료" : "미션 완료 확인"}
+                </button>
+                <button onClick={() => { setShowResult(false); setCurrent(0); }} className="rounded-2xl border border-blue-200 bg-white px-6 py-3 font-black text-blue-700">다시 풀기</button>
+              </div>
+            </div>
+          ) : (
+            <div className="quest-question-card mt-5 rounded-[1.5rem] p-6">
+              <div className="mb-4 flex items-center gap-3">
+                <div className="quest-question-icon">{unit === "coordinate" ? "🧭" : unit === "direct" ? "⚖️" : "💎"}</div>
+                <h3 className="text-xl font-black leading-snug text-blue-950">{question.q}</h3>
+              </div>
+              <div className="mt-5 grid gap-3 md:grid-cols-2">
+                {question.choices.map((choice) => (
+                  <button
+                    key={choice}
+                    onClick={() => chooseAnswer(choice)}
+                    className={`quest-choice-button rounded-2xl border px-5 py-4 text-left font-black transition ${selected === choice ? "selected" : ""}`}
+                  >
+                    {choice}
+                  </button>
+                ))}
+              </div>
+              <div className="mt-5 flex justify-between">
+                <button onClick={prev} className="rounded-2xl border border-blue-200 bg-white px-5 py-3 font-black text-blue-700">이전</button>
+                <button onClick={next} disabled={!selected} className="quest-button rounded-2xl px-6 py-3 font-black disabled:opacity-40">{current === total - 1 ? "결과 보기" : "다음"}</button>
+              </div>
+            </div>
+          )}
+        </div>
+        <AssessmentSidePanel set={set} answers={answers[unit] || {}} current={current} setCurrent={setCurrent} solved={solved} score={score} />
+      </div>
+    </Card>
+  );
 }
 
-function AssessmentSidePanel({ set, answers, current, setCurrent }) {
-  return <div className="rounded-[1.7rem] border border-blue-100 bg-white p-5"><h3 className="text-xl font-black text-blue-950">문항 이동</h3><div className="mt-4 grid grid-cols-5 gap-2">{set.questions.map((q, index) => <button key={q.q} onClick={() => setCurrent(index)} className={`h-10 rounded-xl text-sm font-black ${current === index ? "bg-blue-600 text-white" : answers[index] ? "bg-green-50 text-green-700" : "bg-slate-100 text-slate-500"}`}>{index + 1}</button>)}</div><div className="mt-5 rounded-2xl bg-blue-50 p-4 text-sm font-bold text-blue-800">문항은 각 개념별로 10문항씩 구성되어 있습니다. 오답 피드백을 읽고 다음 문제로 넘어가세요.</div></div>;
+function AssessmentSidePanel({ set, answers, current, setCurrent, solved = 0, score = 0 }) {
+  return (
+    <div className="quest-assessment-side rounded-[1.7rem] p-5">
+      <div className="quest-growth-title">문항 이동</div>
+      <div className="mt-2 text-xs font-bold text-slate-500">풀이 {solved}/{set.questions.length} · 정답 {score}/{set.questions.length}</div>
+      <div className="mt-4 grid grid-cols-5 gap-2">
+        {set.questions.map((q, index) => (
+          <button
+            key={q.q}
+            onClick={() => setCurrent(index)}
+            className={`quest-number-button h-10 rounded-xl text-sm font-black ${current === index ? "active" : answers[index] ? "done" : ""}`}
+          >
+            {index + 1}
+          </button>
+        ))}
+      </div>
+      <div className="quest-side-guide mt-5 rounded-2xl p-4 text-sm font-bold leading-relaxed text-blue-900">
+        📘 문항은 각 개념별로 10문항씩 구성되어 있습니다. 결과 보기 전까지 정답과 해설은 보이지 않아요.
+      </div>
+      <div className="quest-side-guide mt-3 rounded-2xl p-4 text-sm font-bold leading-relaxed text-amber-900">
+        ⭐ 결과를 보면 성장기록에서 나만의 복습 처방전을 확인할 수 있어요.
+      </div>
+    </div>
+  );
 }
 
 function GrowthScreen({ setActive, answers, reflections }) {
-  return <GrowthSummary setActive={setActive} answers={answers} reflections={reflections} full />;
+  return <GrowthSummary setActive={setActive} answers={answers} reflections={reflections} />;
 }
 
-function GrowthSummary({ setActive, answers = {}, reflections = {}, full = false }) {
+function GrowthSummary({ setActive, answers = {}, reflections = {} }) {
   const summary = getAssessmentSummary(answers);
-  const completedUnits = summary.units.filter((unit) => unit.solved > 0);
   const mainScoreText = summary.totalSolved === 0 ? "미응시" : `${summary.totalCorrect}/${summary.totalQuestions}`;
   const mainPercentText = summary.totalSolved === 0 ? "0%" : `${summary.averagePercent}%`;
   const recommendedQuestions = getRecommendedQuestions(summary);
@@ -3846,6 +4276,7 @@ function GrowthSummary({ setActive, answers = {}, reflections = {}, full = false
   const [recommendAnswers, setRecommendAnswers] = useState({});
   const recommendScore = recommendedQuestions.reduce((sum, q) => sum + (recommendAnswers[q.id] === q.answer ? 1 : 0), 0);
   const misconceptions = getMiddle1Misconceptions(answers);
+  const wrongItems = getMiddle1WrongItems(answers);
   const primaryMisconception = misconceptions[0];
   const prescriptionSteps = getPrescriptionSteps({
     gradeLabel: "중1",
@@ -3855,95 +4286,116 @@ function GrowthSummary({ setActive, answers = {}, reflections = {}, full = false
   });
 
   return (
-    <Card className="h-full overflow-hidden p-6">
-      <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+    <Card className="quest-growth-page h-full overflow-hidden p-5">
+      <div className="quest-growth-header mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div>
+          <div className="text-xs font-black text-blue-700">✦ 성장 기록 퀘스트</div>
           <h2 className="text-2xl font-black text-blue-950">형성평가 / 성장기록</h2>
-          <p className="mt-1 text-sm text-slate-500">형성평가 점수를 바탕으로 약한 개념을 분석하고 문제은행에서 맞춤 문제를 추천합니다.</p>
+          <p className="mt-1 text-sm font-bold text-slate-600">형성평가 점수를 바탕으로 약한 개념을 분석하고 문제은행에서 맞춤 문제를 추천합니다.</p>
         </div>
-        <button onClick={() => setActive("assessment")} className="rounded-2xl bg-blue-600 px-5 py-3 font-black text-white shadow-lg shadow-blue-200">
-          형성평가 풀러가기
+        <button onClick={() => setActive("assessment")} className="quest-button rounded-2xl px-6 py-3 text-base">
+          🧭 형성평가 풀러가기
         </button>
       </div>
 
-      <div className="grid h-[calc(100%-78px)] min-h-0 gap-4 overflow-hidden xl:grid-cols-[300px_1fr_360px]">
-        <div className="rounded-[1.5rem] border border-blue-200 bg-gradient-to-br from-white to-blue-50 p-5 text-center">
-          <div className="mx-auto flex h-36 w-36 items-center justify-center rounded-full border-[12px] border-blue-500 bg-blue-50 text-3xl font-black text-blue-700">
-            {mainPercentText}
+      <div className="quest-growth-grid grid h-[calc(100%-86px)] min-h-0 gap-4 overflow-hidden xl:grid-cols-[310px_1fr_370px]">
+        <div className="quest-growth-stat rounded-[1.7rem] p-5 text-center">
+          <div className="quest-growth-title">나의 형성평가 현황</div>
+          <div className="quest-ring mx-auto mt-5" style={{ "--p": `${summary.averagePercent}%` }}>
+            <div className="quest-ring-inner">{mainPercentText}</div>
           </div>
-          <div className="mt-3 font-black text-slate-800">총점 {mainScoreText}</div>
-          <p className="mt-1 text-sm text-slate-500">풀이 완료 문항 {summary.totalSolved}/{summary.totalQuestions}</p>
-          {summary.totalSolved === 0 && <div className="mt-4 rounded-2xl bg-amber-50 px-4 py-3 text-sm font-bold text-amber-800">아직 형성평가를 풀지 않았어요.</div>}
+          <div className="mt-5 text-xl font-black text-blue-950">총점 <span className="text-blue-700">{mainScoreText}</span></div>
+          <p className="mt-1 text-sm font-bold text-slate-600">풀이 완료 문항 {summary.totalSolved}/{summary.totalQuestions}</p>
+          <div className="quest-crystal mt-7">💎</div>
+          {summary.totalSolved === 0 && <div className="mt-4 rounded-2xl bg-amber-50 px-4 py-3 text-sm font-black text-amber-800">아직 형성평가를 풀지 않았어요.</div>}
         </div>
 
-        <div className="min-h-0 overflow-y-auto rounded-[1.5rem] border border-blue-200 bg-gradient-to-br from-white to-slate-50 p-5">
-          <h3 className="font-black text-blue-950">개념별 형성평가 기록</h3>
+        <div className="quest-growth-record min-h-0 overflow-y-auto rounded-[1.7rem] p-5">
+          <div className="quest-growth-title">개념별 형성평가 기록</div>
           <div className="mt-4 space-y-4">
             {summary.units.map((unit) => (
-              <div key={unit.key} className="rounded-2xl bg-slate-50 p-4">
-                <div className="mb-2 flex items-center justify-between text-sm font-black">
-                  <span className="text-slate-700">{unit.title}</span>
-                  <span className="text-blue-700">{unit.correct}/{unit.total} · {unit.percent}%</span>
+              <div key={unit.key} className="quest-progress-row">
+                <div className="quest-progress-icon">{unit.key === "coordinate" ? "🧭" : unit.key === "direct" ? "⚖️" : "📈"}</div>
+                <div className="min-w-0 flex-1">
+                  <div className="mb-2 flex items-center justify-between gap-3 text-sm font-black">
+                    <span className="truncate text-blue-950">{unit.title}</span>
+                    <span className="shrink-0 text-blue-700">{unit.correct}/{unit.total} · {unit.percent}%</span>
+                  </div>
+                  <div className="quest-progress-bar"><div style={{ width: `${unit.percent}%` }} /></div>
+                  <div className="mt-2 text-xs font-bold text-slate-500">풀이 문항 {unit.solved}/{unit.total}</div>
                 </div>
-                <div className="h-3 overflow-hidden rounded-full bg-white">
-                  <div className="h-full rounded-full bg-blue-600" style={{ width: `${unit.percent}%` }} />
-                </div>
-                <div className="mt-2 text-xs font-bold text-slate-500">풀이 문항 {unit.solved}/{unit.total}</div>
               </div>
             ))}
           </div>
-          <MisconceptionReport misconceptions={misconceptions} />
-          <LearningPrescription steps={prescriptionSteps} setActive={setActive} />
-          <FunctionConceptMap grade="middle1" summary={summary} />
-          <TeacherDashboard title="교사용 대시보드" summary={summary} misconceptions={misconceptions} reflections={reflections} />
+
+          <div className="quest-report mt-5">
+            <div className="flex items-center gap-2 text-base font-black text-rose-900"><span>⚠️</span> 함수 오개념 진단 리포트</div>
+            {wrongItems.length === 0 && summary.totalSolved > 0 ? (
+              <div className="mt-3 rounded-2xl bg-white/80 px-4 py-3 text-sm font-bold leading-relaxed text-emerald-800">오답이 없습니다. 심화 문제와 설명 글쓰기로 개념을 더 단단히 해보세요.</div>
+            ) : wrongItems.length === 0 ? (
+              <div className="mt-3 rounded-2xl bg-white/80 px-4 py-3 text-sm font-bold leading-relaxed text-slate-700">형성평가를 풀면 틀린 문항 수만큼 오답 해설이 표시됩니다.</div>
+            ) : (
+              <div className="mt-3 space-y-2">
+                {wrongItems.map((item) => (
+                  <div key={item.globalKey} className="rounded-2xl bg-white/80 px-4 py-3 text-sm font-bold leading-relaxed text-rose-900">
+                    문제 {item.index + 1} [{item.unitTitle}] · 정답: {item.answer} · {item.explain || "관련 개념을 복습하세요."}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="quest-prescription mt-5">
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-base font-black text-emerald-950">🧪 나만의 함수 처방전</div>
+              <button onClick={() => setActive("concept")} className="rounded-xl border border-emerald-200 bg-white px-3 py-1.5 text-xs font-black text-emerald-700">개념학습</button>
+            </div>
+            <div className="mt-3 grid gap-2 md:grid-cols-2">
+              {prescriptionSteps.slice(0, 4).map((step) => (
+                <button key={step.step} onClick={() => step.action.includes("개념") ? setActive("concept") : step.action.includes("탐구") ? setActive("explore") : setActive("growth")} className="rounded-2xl bg-white/75 px-4 py-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                  <div className="text-xs font-black text-emerald-700">{step.step} · {step.title}</div>
+                  <div className="mt-1 text-xs font-bold leading-relaxed text-slate-700">{step.desc}</div>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
-        <div className="flex min-h-0 flex-col rounded-[1.5rem] border border-blue-200 bg-gradient-to-br from-white to-purple-50 p-5 overflow-hidden">
-          <h3 className="shrink-0 font-black text-blue-950">문제은행 기반 AI형 맞춤 추천</h3>
+        <div className="quest-ai-panel flex min-h-0 flex-col overflow-hidden rounded-[1.7rem] p-5">
+          <div className="quest-growth-title">문제은행 기반 AI형 맞춤 추천</div>
           {summary.totalSolved === 0 ? (
-            <div className="mt-4 shrink-0 rounded-2xl bg-blue-50 px-4 py-4 text-sm font-bold text-blue-800">
-              먼저 형성평가를 풀면 약한 개념을 분석해 추천 문제를 제공합니다.
-            </div>
+            <div className="mt-4 rounded-2xl bg-blue-50 px-4 py-4 text-sm font-black leading-relaxed text-blue-800">먼저 형성평가를 풀면 약한 개념을 분석해 추천 문제를 제공합니다.</div>
           ) : (
             <>
-              <div className="mt-4 shrink-0 rounded-2xl bg-orange-50 px-4 py-3">
-                <div className="font-black text-orange-800">우선 복습 추천</div>
-                <div className="mt-1 text-sm font-bold text-slate-700">{summary.weakest.title}</div>
-                <div className="text-sm font-bold text-slate-500">정답률 {summary.weakest.percent}% · 추천 난이도 {getRecommendationLevel(summary.weakest.percent)}</div>
+              <div className="quest-priority mt-4">
+                <div className="text-lg font-black text-orange-800">🏅 우선 복습 추천</div>
+                <div className="mt-2 text-base font-black text-blue-950">{summary.weakest.title}</div>
+                <div className="mt-1 text-sm font-bold text-slate-600">정답률 {summary.weakest.percent}% · 추천 난이도 {getRecommendationLevel(summary.weakest.percent)}</div>
+                <div className="absolute right-4 top-4 text-5xl">💠</div>
               </div>
-              <div className="mt-3 shrink-0 space-y-1.5 text-xs font-bold leading-relaxed text-slate-700">
+              <div className="mt-4 space-y-1.5 text-sm font-bold leading-relaxed text-slate-700">
                 {summary.weakest.key === "coordinate" && <div>• 사분면의 부호와 좌표축 위의 점을 다시 확인하세요.</div>}
                 {summary.weakest.key === "direct" && <div>• y÷x가 일정한지 확인하고, 원점을 지나는 그래프인지 살펴보세요.</div>}
                 {summary.weakest.key === "inverse" && <div>• xy가 일정한지 확인하고, x=0을 사용할 수 없는 이유를 복습하세요.</div>}
               </div>
-              <button onClick={() => setShowRecommended((prev) => !prev)} className="mt-3 flex w-full shrink-0 items-center justify-center gap-2 rounded-2xl bg-purple-600 px-5 py-3 text-base font-black text-white shadow-lg shadow-purple-100 transition hover:bg-purple-700">
-                <Sparkles className="h-5 w-5" /> {showRecommended ? "추천 문제 접기" : "AI 맞춤 문제 추천 받기"}
+              <button onClick={() => setShowRecommended((prev) => !prev)} className="quest-magic-button mt-4 w-full rounded-2xl px-5 py-3 text-base font-black text-white">
+                ✨ {showRecommended ? "추천 문제 접기" : "AI 맞춤 문제 추천 받기"}
               </button>
+              {!showRecommended && <button onClick={() => setActive("concept")} className="quest-button mt-3 w-full rounded-2xl px-5 py-3 text-base">☆ 맞춤 개념학습으로 이동</button>}
               {showRecommended && (
-                <div className="mt-3 min-h-0 flex-1 overflow-y-auto rounded-2xl bg-purple-50 p-3 pr-2">
-                  <div className="mb-3 flex items-center justify-between text-sm font-black text-purple-900">
-                    <span>추천 문제 세트</span>
-                    <span>{recommendScore}/{recommendedQuestions.length}</span>
-                  </div>
+                <div className="mt-3 min-h-0 flex-1 overflow-y-auto rounded-2xl bg-purple-50/80 p-3 pr-2">
+                  <div className="mb-3 flex items-center justify-between text-sm font-black text-purple-900"><span>추천 문제 세트</span><span>{recommendScore}/{recommendedQuestions.length}</span></div>
                   <div className="space-y-3">
                     {recommendedQuestions.map((q) => {
                       const selected = recommendAnswers[q.id];
                       return (
-                        <div key={q.id} className="rounded-2xl bg-white p-3">
+                        <div key={q.id} className="rounded-2xl bg-white p-3 shadow-sm">
                           <div className="mb-1 text-xs font-black text-purple-700">{q.order}. {q.skill} · {q.difficulty}</div>
                           <div className="text-sm font-black text-slate-800">{q.q}</div>
                           <div className="mt-2 grid gap-2">
-                            {q.choices.map((choice) => (
-                              <button key={choice} onClick={() => setRecommendAnswers((prev) => ({ ...prev, [q.id]: choice }))} className={`rounded-xl border px-3 py-2 text-left text-sm font-bold ${selected === choice ? "border-purple-500 bg-purple-600 text-white" : "border-slate-100 bg-slate-50 text-slate-700 hover:bg-purple-50"}`}>
-                                {choice}
-                              </button>
-                            ))}
+                            {q.choices.map((choice) => <button key={choice} onClick={() => setRecommendAnswers((prev) => ({ ...prev, [q.id]: choice }))} className={`rounded-xl border px-3 py-2 text-left text-sm font-bold ${selected === choice ? "border-purple-500 bg-purple-600 text-white" : "border-slate-100 bg-slate-50 text-slate-700 hover:bg-purple-50"}`}>{choice}</button>)}
                           </div>
-                          {selected && (
-                            <div className={`mt-2 rounded-xl px-3 py-2 text-xs font-bold ${selected === q.answer ? "bg-green-50 text-green-800" : "bg-rose-50 text-rose-800"}`}>
-                              {selected === q.answer ? "정답입니다. " : `정답: ${q.answer}. `}{q.explain}
-                            </div>
-                          )}
+                          {selected && <div className={`mt-2 rounded-xl px-3 py-2 text-xs font-bold ${selected === q.answer ? "bg-green-50 text-green-800" : "bg-rose-50 text-rose-800"}`}>{selected === q.answer ? "정답입니다. " : `정답: ${q.answer}. `}{q.explain}</div>}
                         </div>
                       );
                     })}
@@ -3952,11 +4404,7 @@ function GrowthSummary({ setActive, answers = {}, reflections = {}, full = false
               )}
             </>
           )}
-          {completedUnits.length > 0 && !showRecommended && (
-            <button onClick={() => setActive("concept")} className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-base font-black text-white shadow-lg shadow-blue-200 transition hover:bg-blue-700">
-              <Star className="h-5 w-5" /> 맞춤 개념학습으로 이동
-            </button>
-          )}
+          <div className="mt-auto pt-4 text-center text-5xl">📖💎</div>
         </div>
       </div>
     </Card>
@@ -4176,21 +4624,178 @@ const gradeExtensionData = {
 
 function GradeExtensionHome({ grade, setActive, expPoints, isMissionComplete }) {
   const data = gradeExtensionData[grade];
+  const gradeArt = {
+    middle2: {
+      points: "⭐",
+      ready: "📜",
+      concept: "📘",
+      ai: "🤖",
+      explore: "📈",
+      game: "🧰",
+      assessment: "🎯",
+      growth: "💎",
+      title: "일차함수 항해 지도",
+    },
+    middle3: {
+      points: "⭐",
+      ready: "📜",
+      concept: "📖",
+      ai: "🤖",
+      explore: "🧪",
+      game: "🎁",
+      assessment: "🎯",
+      growth: "💎",
+      title: "포물선 마스터 지도",
+    },
+  };
+  const artSet = gradeArt[grade] || gradeArt.middle2;
+
   const tiles = [
-    { title: "탐험 포인트", desc: `${data.gradeLabel} 함수 탐험 포인트`, icon: Star, value: `${expPoints}P`, target: null },
-    { title: "학습준비", desc: `${data.units[0]}부터 빠르게 진단해요.`, icon: ClipboardCheck, target: "ready" },
-    { title: "개념학습", desc: data.units.join(" · "), icon: BookOpen, target: "concept" },
-    { title: "AI 그래프 해석실", desc: "함수식을 입력하고 AI처럼 그래프를 해석해요.", icon: Bot, target: "ai" },
-    { title: "탐구활동", desc: `${data.explore.formula}를 조작해요.`, icon: FlaskConical, target: "explore" },
-    { title: "게임존", desc: "개념 카드와 빠른 판별 게임으로 복습해요.", icon: Star, target: "game" },
-    { title: "형성평가", desc: "핵심 문항으로 이해 정도를 점검해요.", icon: Target, target: "assessment" },
-    { title: "성장기록", desc: "학습 흐름과 다음 학습을 확인해요.", icon: BarChart3, target: "growth" },
+    {
+      type: "points",
+      title: "탐험 포인트",
+      desc: `${data.gradeLabel} 함수 탐험 포인트`,
+      icon: Star,
+      color: "orange",
+      value: `${expPoints}P`,
+      art: artSet.points,
+      tag: "보상 현황",
+      className: "quest-home-card--points",
+    },
+    {
+      title: "학습준비",
+      desc: `${data.units[0]}부터 빠르게 진단해요.`,
+      icon: ClipboardCheck,
+      color: "blue",
+      target: "ready",
+      action: "출발하기",
+      mission: "ready",
+      art: artSet.ready,
+      tag: "출발 미션",
+      className: "quest-home-card--ready",
+    },
+    {
+      title: "개념학습",
+      desc: data.units.slice(0, 4).join(" · "),
+      icon: BookOpen,
+      color: "green",
+      target: "concept",
+      action: "개념 익히기",
+      mission: "concept",
+      art: artSet.concept,
+      tag: grade === "middle3" ? "포물선 마법서" : "일차함수 마법서",
+      className: "quest-home-card--concept",
+    },
+    {
+      title: "AI 그래프 해석실",
+      desc: "함수식을 입력하고 AI처럼 그래프를 해석해요.",
+      icon: Bot,
+      color: "purple",
+      target: "ai",
+      action: "해석실 열기",
+      art: artSet.ai,
+      tag: "AI 조력자",
+      className: "quest-home-card--ai",
+    },
+    {
+      title: "탐구활동",
+      desc: `${data.explore.formula}를 조작하며 그래프 변화를 관찰해요.`,
+      icon: FlaskConical,
+      color: "purple",
+      target: "explore",
+      action: "탐구하기",
+      mission: "explore",
+      art: artSet.explore,
+      tag: "탐험 지도",
+      className: "quest-home-card--explore",
+    },
+    {
+      title: "게임존",
+      desc: "개념 카드와 빠른 판별 게임으로 복습해요.",
+      icon: Star,
+      color: "orange",
+      target: "game",
+      action: "게임 시작",
+      art: artSet.game,
+      tag: "보물상자",
+      className: "quest-home-card--game",
+    },
+    {
+      title: "형성평가",
+      desc: "핵심 문항으로 이해 정도를 점검해요.",
+      icon: Target,
+      color: "orange",
+      target: "assessment",
+      action: "평가 시작",
+      mission: "assessment",
+      art: artSet.assessment,
+      tag: "도전 관문",
+      className: "quest-home-card--assessment",
+    },
+    {
+      title: "성장기록",
+      desc: "학습 흐름과 다음 학습을 확인해요.",
+      icon: BarChart3,
+      color: "blue",
+      target: "growth",
+      action: "기록 보기",
+      art: artSet.growth,
+      tag: "성장 크리스탈",
+      className: "quest-home-card--growth",
+    },
   ];
+
   return (
-    <div className="grid h-full grid-cols-4 grid-rows-2 gap-3 overflow-hidden">
+    <div className="quest-home-grid quest-grade-home-grid grid h-full grid-cols-4 grid-rows-2 gap-3 overflow-hidden">
       {tiles.map((tile) => {
         const Icon = tile.icon;
-        return <Card key={tile.title} className="p-5"><div className="flex h-full flex-col justify-between gap-3"><div><IconBadge icon={Icon} color={tile.title === "탐험 포인트" ? "orange" : "purple"} /><h3 className="mt-4 text-xl font-black text-blue-950">{tile.title}</h3>{tile.value && <div className="mt-3 rounded-2xl bg-amber-50 px-4 py-3 text-3xl font-black text-amber-700">⭐ {tile.value}</div>}<p className="mt-3 text-sm font-bold leading-relaxed text-slate-600">{tile.desc}</p></div>{tile.target ? <div className="space-y-2">{["ready", "concept", "explore", "assessment"].includes(tile.target) && <MissionStatusBadge done={isMissionComplete(tile.target)} />}<button onClick={() => setActive(tile.target)} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-base font-black text-white shadow-lg shadow-blue-100">열기 <ChevronRight className="h-4 w-4" /></button></div> : <div className="rounded-2xl bg-amber-50 px-4 py-3 text-sm font-black text-amber-700">학습 미션 완료 시 포인트가 올라가요.</div>}</div></Card>;
+        const isPointTile = tile.type === "points";
+        const done = tile.mission ? isMissionComplete(tile.mission) : false;
+
+        return (
+          <Card key={tile.title} className={`quest-home-card quest-grade-home-card ${tile.className} relative overflow-hidden p-5`}>
+            <div className="quest-home-card-glow" />
+            <div className="quest-card-corner-star" aria-hidden="true">✦</div>
+            <div className="relative z-10 flex h-full flex-col justify-between gap-4">
+              <div>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="quest-home-art quest-grade-home-art" aria-hidden="true">{tile.art}</div>
+                  <div className="quest-home-tag">{tile.tag}</div>
+                </div>
+
+                <div className="mt-4 flex items-center gap-3">
+                  <IconBadge icon={Icon} color={tile.color} compact />
+                  <h3 className="text-xl font-black text-blue-950">{tile.title}</h3>
+                </div>
+
+                {isPointTile ? (
+                  <div className="quest-point-display mt-4 flex items-center justify-center gap-3 rounded-2xl px-4 py-4 text-3xl font-black text-amber-800">
+                    <span className="text-4xl">⭐</span>
+                    <span>{tile.value}</span>
+                  </div>
+                ) : (
+                  <p className="mt-4 text-sm font-black leading-relaxed text-slate-700">{tile.desc}</p>
+                )}
+              </div>
+
+              {isPointTile ? (
+                <div className="quest-note rounded-2xl px-4 py-3 text-sm font-black text-amber-800">
+                  학습 미션 완료 시 포인트가 올라가요.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {tile.mission && <MissionStatusBadge done={done} />}
+                  <button
+                    onClick={() => setActive(tile.target)}
+                    className="quest-button flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-base"
+                  >
+                    {tile.action} <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
+            </div>
+          </Card>
+        );
       })}
     </div>
   );
@@ -4401,7 +5006,7 @@ function GradeExtensionConcept({ grade, completeMission, isMissionComplete }) {
 
   if (!item) {
     return (
-      <Card className="h-full overflow-hidden p-5">
+      <Card className="quest-grade-concept-screen h-full overflow-hidden p-5">
         <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
           <div>
             <h2 className="text-2xl font-black text-blue-950">{data.title} 개념학습</h2>
@@ -4425,9 +5030,9 @@ function GradeExtensionConcept({ grade, completeMission, isMissionComplete }) {
             <button
               key={card.title}
               onClick={() => setSelected(index)}
-              className="group flex min-h-0 flex-col rounded-[1.7rem] border border-blue-200 bg-gradient-to-br from-white to-blue-50 p-4 text-left shadow-sm transition hover:-translate-y-1 hover:border-blue-300 hover:shadow-lg"
+              className="quest-grade-concept-card group flex min-h-0 flex-col rounded-[1.7rem] border border-blue-200 bg-gradient-to-br from-white to-blue-50 p-4 text-left shadow-sm transition hover:-translate-y-1 hover:border-blue-300 hover:shadow-lg"
             >
-              <div className="inline-flex w-fit rounded-2xl bg-blue-50 px-4 py-3 text-xl font-black text-blue-700">{card.visual}</div>
+              <div className="quest-grade-formula inline-flex w-fit rounded-2xl bg-blue-50 px-4 py-3 text-xl font-black text-blue-700">{card.visual}</div>
               <h3 className="mt-3 text-lg font-black leading-tight text-blue-950">{stripUnitPrefix(card.title)}</h3>
               <p className="mt-2 flex-1 text-sm font-bold leading-relaxed text-slate-600">{card.desc}</p>
               <div className="mt-3 inline-flex items-center justify-center gap-1 rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white group-hover:bg-blue-700">
@@ -4441,7 +5046,7 @@ function GradeExtensionConcept({ grade, completeMission, isMissionComplete }) {
   }
 
   return (
-    <Card className="h-full overflow-hidden p-5">
+    <Card className="quest-grade-concept-detail h-full overflow-hidden p-5">
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
           <button onClick={() => setSelected(null)} className="mb-2 rounded-2xl border border-blue-200 bg-white px-4 py-2 text-sm font-black text-blue-700 hover:bg-blue-50">
@@ -4945,7 +5550,7 @@ function GradeExtensionGame({ grade, awardPoints, expPoints }) {
 
   if (grade === "middle2") {
     return (
-      <div className="grid h-full grid-rows-[46px_1fr] gap-2 overflow-hidden rounded-[2rem] border border-blue-100 bg-white/90 p-2 shadow-sm">
+      <div className="quest-game-stage quest-game-stage-linear grid h-full grid-rows-[46px_1fr] gap-2 overflow-hidden rounded-[2rem] border border-blue-100 bg-white/90 p-2 shadow-sm">
         <div className="flex items-center justify-between rounded-[1.25rem] bg-blue-50/70 px-3">
           <div className="text-sm font-black text-blue-900">일차함수 레이저 슈터 · 게임 전용 점수</div>
           <div className="rounded-2xl bg-white px-4 py-2 text-xs font-black text-amber-700 shadow-sm">
@@ -4961,7 +5566,7 @@ function GradeExtensionGame({ grade, awardPoints, expPoints }) {
 
   if (grade === "middle3") {
     return (
-      <div className="grid h-full grid-rows-[46px_1fr] gap-2 overflow-hidden rounded-[2rem] border border-purple-100 bg-white/90 p-2 shadow-sm">
+      <div className="quest-game-stage quest-game-stage-parabola grid h-full grid-rows-[46px_1fr] gap-2 overflow-hidden rounded-[2rem] border border-purple-100 bg-white/90 p-2 shadow-sm">
         <div className="flex items-center justify-between rounded-[1.25rem] bg-purple-50/80 px-3">
           <div className="text-sm font-black text-purple-900">포물선 마스터 · 게임 전용 점수</div>
           <div className="rounded-2xl bg-white px-4 py-2 text-xs font-black text-amber-700 shadow-sm">
@@ -5225,9 +5830,10 @@ function GradeExtensionExplore({ grade, completeMission, isMissionComplete, refl
     : `y = ${formatValue(a)}x ${b >= 0 ? "+" : "-"} ${formatValue(Math.abs(b))}`;
 
   return (
-    <Card className="h-full overflow-hidden p-5">
-      <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+    <Card className="quest-explore-shell quest-grade-explore-shell h-full overflow-hidden p-5">
+      <div className="quest-explore-header mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div>
+          <div className="quest-section-kicker">🔮 함수 그래프 조작 퀘스트</div>
           <h2 className="text-2xl font-black text-blue-950">{title}</h2>
           <p className="mt-1 text-sm text-slate-500">슬라이더를 조정하며 식과 그래프가 변하는 형태를 한눈에 관찰하세요.</p>
         </div>
@@ -5243,14 +5849,14 @@ function GradeExtensionExplore({ grade, completeMission, isMissionComplete, refl
         </div>
       </div>
 
-      <div className="grid h-[calc(100%-86px)] min-h-0 gap-4 xl:grid-cols-[360px_1fr]">
-        <div className="min-h-0 overflow-auto rounded-[1.7rem] border border-blue-100 bg-blue-50/60 p-5">
-          <div className="rounded-[1.5rem] bg-slate-950 p-5 text-center text-white shadow-sm">
+      <div className="quest-grade-explore-grid grid h-[calc(100%-86px)] min-h-0 gap-4 xl:grid-cols-[360px_1fr]">
+        <div className="quest-explore-control-panel min-h-0 overflow-auto rounded-[1.7rem] border border-blue-100 bg-blue-50/60 p-5">
+          <div className="quest-formula-crystal rounded-[1.5rem] bg-slate-950 p-5 text-center text-white shadow-sm">
             <div className="text-xs font-bold text-blue-200">실시간 함수식</div>
             <div className="mt-2 text-3xl font-black tracking-wide">{expression}</div>
           </div>
 
-          <div className="mt-4 space-y-4 rounded-[1.5rem] bg-white p-5 shadow-sm">
+          <div className="quest-slider-scroll mt-4 space-y-4 rounded-[1.5rem] bg-white p-5 shadow-sm">
             <SliderControl label="기울기 / 폭 a" value={a} setValue={setA} min={data.explore.aMin} max={data.explore.aMax} step={0.2} />
             {!isMiddle3 && <SliderControl label="y절편 b" value={b} setValue={setB} min={data.explore.bMin} max={data.explore.bMax} step={0.5} />}
             {isMiddle3 && (
@@ -5261,7 +5867,7 @@ function GradeExtensionExplore({ grade, completeMission, isMissionComplete, refl
             )}
           </div>
 
-          <div className="mt-4 rounded-[1.5rem] border border-blue-100 bg-white p-4 text-sm font-bold leading-relaxed text-slate-700">
+          <div className="quest-explore-tips mt-4 rounded-[1.5rem] border border-blue-100 bg-white p-4 text-sm font-bold leading-relaxed text-slate-700">
             {isMiddle3 ? (
               <>
                 <div>• a의 부호는 포물선의 방향을 결정합니다.</div>
@@ -5283,7 +5889,7 @@ function GradeExtensionExplore({ grade, completeMission, isMissionComplete, refl
           </div>
         </div>
 
-        <div className="min-h-0 overflow-hidden rounded-[1.7rem] border border-blue-100 bg-white p-5">
+        <div className="quest-graph-stage min-h-0 overflow-hidden rounded-[1.7rem] border border-blue-100 bg-white p-5">
           {isMiddle3 ? (
             <QuadraticGraphPlane a={safeA} p={p} q={q} label={expression} />
           ) : (
@@ -5297,7 +5903,7 @@ function GradeExtensionExplore({ grade, completeMission, isMissionComplete, refl
 
 function SliderControl({ label, value, setValue, min, max, step = 1 }) {
   return (
-    <div>
+    <div className="quest-slider-control">
       <div className="mb-2 flex items-center justify-between text-sm font-black text-slate-700">
         <span>{label}</span>
         <span className="rounded-xl bg-blue-50 px-3 py-1 text-blue-700">{formatValue(value)}</span>
@@ -5324,7 +5930,7 @@ function LinearExploreGraph({ a, b }) {
   const ticks = Array.from({ length: 25 }, (_, index) => -6 + index * 0.5);
   return (
     <div className="flex h-full min-h-0 items-center justify-center rounded-2xl bg-slate-50 p-2">
-      <svg viewBox={`0 0 ${size} ${size}`} className="h-full max-h-full w-auto rounded-2xl bg-white">
+      <svg viewBox={`0 0 ${size} ${size}`} className="quest-graph-svg h-full max-h-full w-auto rounded-2xl bg-white">
         <defs><clipPath id="linear-explore-clip"><rect x={padding} y={padding} width={plotSize} height={plotSize} /></clipPath></defs>
         {ticks.map((tick) => {
           const fixed = Number(tick.toFixed(2));
@@ -5364,7 +5970,7 @@ function GradeQuickFunctionQuiz({ data, awardPoints, expPoints }) {
   };
 
   return (
-    <Card className="h-full p-5">
+    <Card className="quest-grade-quick-game h-full p-5">
       <div className="mb-4 flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-black text-blue-950">{data.gradeLabel} 게임존</h2>
@@ -5373,7 +5979,7 @@ function GradeQuickFunctionQuiz({ data, awardPoints, expPoints }) {
         {expPoints !== undefined && <div className="rounded-2xl bg-amber-50 px-5 py-3 text-lg font-black text-amber-700">⭐ {expPoints}P</div>}
       </div>
       <div className="grid h-[calc(100%-84px)] place-items-center">
-        <div className="w-full max-w-2xl rounded-[2rem] border border-blue-100 bg-blue-50/60 p-8">
+        <div className="quest-quick-game-panel w-full max-w-2xl rounded-[2rem] border border-blue-100 bg-blue-50/60 p-8">
           <div className="inline-block rounded-full bg-white px-4 py-2 text-sm font-black text-blue-700">문제 {current + 1}/{data.gameQuestions.length}</div>
           <h3 className="mt-5 text-2xl font-black text-blue-950">{q.q}</h3>
           <input value={answer} onChange={(e) => setAnswer(e.target.value)} className="mt-5 w-full rounded-2xl border border-blue-100 bg-white px-5 py-4 text-xl font-black outline-none" placeholder="답 입력" />
@@ -5455,11 +6061,89 @@ function GradeExtensionAssessment({ grade, answers = {}, setAnswers, completeMis
   const total = data.assessment.length;
   const score = data.assessment.reduce((sum, q, i) => sum + (answers[i] === q.answer ? 1 : 0), 0);
   const solved = data.assessment.reduce((sum, _q, i) => sum + (answers[i] ? 1 : 0), 0);
+  const progress = Math.round(((current + 1) / total) * 100);
+  const conceptIcon = grade === "middle2" ? "📐" : "🏔️";
+  const conceptTitle = data.units[1] || data.title;
   const chooseAnswer = (choice) => setAnswers((prev) => ({ ...prev, [current]: choice }));
-  const next = () => { if (current < total - 1) setCurrent((prev) => prev + 1); else setShowResult(true); };
+  const next = () => {
+    if (current < total - 1) setCurrent((prev) => prev + 1);
+    else setShowResult(true);
+  };
   const prev = () => setCurrent((prev) => Math.max(0, prev - 1));
 
-  return <Card className="h-full overflow-hidden p-5"><div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between"><div><h2 className="text-2xl font-black text-blue-950">{data.gradeLabel} 형성평가</h2><p className="mt-1 text-sm text-slate-500">중1과 같은 방식으로 10문항을 한 문제씩 풀고 성장기록에 반영합니다.</p><div className="mt-2"><MissionStatusBadge done={isMissionComplete("assessment")} /></div></div><button onClick={() => completeMission("assessment", 30)} disabled={solved < total || isMissionComplete("assessment")} className="rounded-2xl bg-green-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-green-100 disabled:bg-green-100 disabled:text-green-700">{isMissionComplete("assessment") ? "미션 완료" : "평가 완료 +30P"}</button></div><div className="grid h-[calc(100%-92px)] min-h-0 gap-4 xl:grid-cols-[1fr_330px]"><div className="rounded-[1.7rem] border border-blue-100 bg-blue-50/50 p-5"><div className="flex items-center justify-between"><div className="text-sm font-black text-blue-700">{data.units[1] || data.title} · 문제 {current + 1} / {total}</div><div className="rounded-full bg-white px-4 py-2 text-sm font-black text-blue-700">현재 점수 {score}/{total}</div></div><div className="mt-4 h-3 overflow-hidden rounded-full bg-white"><div className="h-full rounded-full bg-blue-600" style={{ width: `${((current + 1) / total) * 100}%` }} /></div>{showResult ? <div className="mt-6 rounded-[1.5rem] bg-white p-6 text-center"><div className="text-4xl font-black text-blue-700">{score} / {total}</div><p className="mt-3 font-bold text-slate-700">{score >= 8 ? "잘했어요! 핵심 개념을 잘 이해하고 있어요." : "오답을 확인하고 성장기록에서 추천 복습을 확인하세요."}</p><div className="mt-4 rounded-2xl bg-green-50 px-4 py-3 text-sm font-black text-green-700">✅ 형성평가 결과가 성장기록에 반영됩니다.</div><button onClick={() => completeMission("assessment", 30)} disabled={isMissionComplete("assessment")} className="mt-4 rounded-2xl bg-green-600 px-6 py-3 font-black text-white disabled:bg-green-100 disabled:text-green-700">{isMissionComplete("assessment") ? "포인트 지급 완료" : "미션 완료 확인"}</button><button onClick={() => { setShowResult(false); setCurrent(0); }} className="mt-5 ml-2 rounded-2xl bg-blue-600 px-6 py-3 font-black text-white">다시 풀기</button></div> : <div className="mt-5 rounded-[1.5rem] bg-white p-6"><h3 className="text-xl font-black text-slate-800">{question.q}</h3><div className="mt-5 grid gap-3 md:grid-cols-2">{question.choices.map((choice) => <button key={choice} onClick={() => chooseAnswer(choice)} className={`rounded-2xl border px-5 py-4 text-left font-black transition ${selected === choice ? "border-blue-500 bg-blue-600 text-white shadow-md shadow-blue-200" : "border-blue-100 bg-white hover:border-blue-300 hover:bg-blue-50"}`}>{choice}</button>)}</div>{selected && <div className={`mt-5 rounded-2xl px-5 py-4 text-sm font-bold ${selected === question.answer ? "bg-green-50 text-green-800" : "bg-rose-50 text-rose-800"}`}>{selected === question.answer ? "정답입니다! " : `정답: ${question.answer}. `}{question.explain || "핵심 개념을 다시 확인해 보세요."}</div>}<div className="mt-5 flex justify-between"><button onClick={prev} className="rounded-2xl border border-blue-200 bg-white px-5 py-3 font-black text-blue-700">이전</button><button onClick={next} disabled={!selected} className="rounded-2xl bg-blue-600 px-6 py-3 font-black text-white disabled:opacity-40">{current === total - 1 ? "결과 보기" : "다음"}</button></div></div>}</div><AssessmentSidePanel set={{ questions: data.assessment }} answers={answers} current={current} setCurrent={setCurrent} /></div></Card>;
+  return (
+    <Card className="quest-assessment-page quest-grade-assessment h-full overflow-hidden p-5">
+      <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+        <div>
+          <div className="text-xs font-black text-blue-700">✦ {data.gradeLabel} 평가 관문 퀘스트</div>
+          <h2 className="text-2xl font-black text-blue-950">{data.gradeLabel} 형성평가</h2>
+          <p className="mt-1 text-sm font-bold text-slate-600">10문항을 한 문제씩 해결하고 성장기록에 반영합니다.</p>
+          <div className="mt-2"><MissionStatusBadge done={isMissionComplete("assessment")} /></div>
+        </div>
+        <button
+          onClick={() => completeMission("assessment", 30)}
+          disabled={solved < total || isMissionComplete("assessment")}
+          className="quest-finish-button rounded-2xl px-6 py-3 text-sm font-black disabled:opacity-50"
+        >
+          {isMissionComplete("assessment") ? "미션 완료" : "평가 완료 +30P"}
+        </button>
+      </div>
+
+      <div className="quest-assessment-grid grid h-[calc(100%-92px)] min-h-0 gap-4 xl:grid-cols-[1fr_330px]">
+        <div className="quest-assessment-board min-h-0 overflow-hidden rounded-[1.7rem] p-5">
+          <div className="quest-assessment-toolbar flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="quest-question-icon">{conceptIcon}</div>
+              <div>
+                <div className="text-sm font-black text-blue-700">{conceptTitle} · 문제 {current + 1} / {total}</div>
+                <div className="mt-1 text-xs font-bold text-slate-500">결과 보기 전까지 정답과 해설은 보이지 않아요.</div>
+              </div>
+            </div>
+            <div className="quest-score-chip rounded-2xl px-4 py-2 text-sm font-black">현재 점수 {score}/{total}</div>
+          </div>
+
+          <div className="quest-progress-rail mt-4"><div style={{ width: `${progress}%` }} /></div>
+
+          {showResult ? (
+            <div className="quest-result-card mt-5 rounded-[1.5rem] p-6 text-center">
+              <div className="text-6xl">🏆</div>
+              <div className="mt-2 text-4xl font-black text-blue-700">{score} / {total}</div>
+              <p className="mt-3 font-bold text-slate-700">{score >= 8 ? "잘했어요! 핵심 개념을 잘 이해하고 있어요." : "오답을 확인하고 성장기록에서 추천 복습을 확인하세요."}</p>
+              <div className="mt-4 rounded-2xl bg-green-50 px-4 py-3 text-sm font-black text-green-700">✅ 형성평가 결과가 성장기록에 반영됩니다.</div>
+              <div className="mt-5 flex flex-wrap justify-center gap-2">
+                <button onClick={() => completeMission("assessment", 30)} disabled={isMissionComplete("assessment")} className="quest-button rounded-2xl px-6 py-3 font-black disabled:opacity-50">
+                  {isMissionComplete("assessment") ? "포인트 지급 완료" : "미션 완료 확인"}
+                </button>
+                <button onClick={() => { setShowResult(false); setCurrent(0); }} className="rounded-2xl border border-blue-200 bg-white px-6 py-3 font-black text-blue-700">다시 풀기</button>
+              </div>
+            </div>
+          ) : (
+            <div className="quest-question-card quest-grade-question-card mt-5 rounded-[1.5rem] p-6">
+              <div className="quest-question-label mb-4 inline-flex rounded-full px-4 py-2 text-xs font-black">{conceptIcon} {conceptTitle} 관문 {current + 1}</div>
+              <h3 className="text-2xl font-black leading-snug text-blue-950">{question.q}</h3>
+              <div className="mt-6 grid gap-3 md:grid-cols-2">
+                {question.choices.map((choice, index) => (
+                  <button
+                    key={choice}
+                    onClick={() => chooseAnswer(choice)}
+                    className={`quest-choice-button rounded-2xl border px-5 py-4 text-left font-black transition ${selected === choice ? "selected" : ""}`}
+                  >
+                    <span className="mr-2 text-amber-600">{String.fromCharCode(65 + index)}.</span>{choice}
+                  </button>
+                ))}
+              </div>
+              <div className="mt-6 flex justify-between">
+                <button onClick={prev} className="rounded-2xl border border-blue-200 bg-white px-5 py-3 font-black text-blue-700">이전</button>
+                <button onClick={next} disabled={!selected} className="quest-button rounded-2xl px-7 py-3 font-black disabled:opacity-40">{current === total - 1 ? "결과 보기" : "다음"}</button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <AssessmentSidePanel set={{ questions: data.assessment }} answers={answers} current={current} setCurrent={setCurrent} solved={solved} score={score} />
+      </div>
+    </Card>
+  );
 }
 
 function GradeExtensionGrowth({ grade, setActive, answers = {}, reflections = {} }) {
@@ -5476,14 +6160,66 @@ function GradeExtensionGrowth({ grade, setActive, answers = {}, reflections = {}
   const [recommendAnswers, setRecommendAnswers] = useState({});
   const misconceptions = getGradeMisconceptions(grade, data, answers);
   const primaryMisconception = misconceptions[0];
-  const prescriptionSteps = getPrescriptionSteps({
-    gradeLabel: data.gradeLabel,
-    weakestTitle: weakestLabel,
-    misconceptionTitle: primaryMisconception?.title || weakestLabel,
-    route: primaryMisconception?.route || "개념학습 → 탐구활동",
-  });
+  const prescriptionSteps = getPrescriptionSteps({ gradeLabel: data.gradeLabel, weakestTitle: weakestLabel, misconceptionTitle: primaryMisconception?.title || weakestLabel, route: primaryMisconception?.route || "개념학습 → 탐구활동" });
 
-  return <Card className="h-full overflow-hidden p-6"><div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between"><div><h2 className="text-2xl font-black text-blue-950">형성평가 / 성장기록</h2><p className="mt-1 text-sm text-slate-500">형성평가 점수를 바탕으로 약한 개념을 분석하고 맞춤 복습을 추천합니다.</p></div><button onClick={() => setActive("assessment")} className="rounded-2xl bg-blue-600 px-5 py-3 font-black text-white shadow-lg shadow-blue-200">형성평가 풀러가기</button></div><div className="grid h-[calc(100%-78px)] min-h-0 gap-4 overflow-hidden xl:grid-cols-[300px_1fr_360px]"><div className="rounded-[1.5rem] border border-blue-200 bg-gradient-to-br from-white to-blue-50 p-5 text-center"><div className="mx-auto flex h-36 w-36 items-center justify-center rounded-full border-[12px] border-blue-500 bg-blue-50 text-3xl font-black text-blue-700">{solved === 0 ? "0%" : `${percent}%`}</div><div className="mt-3 font-black text-slate-800">총점 {solved === 0 ? "미응시" : `${correct}/${total}`}</div><p className="mt-1 text-sm text-slate-500">풀이 완료 문항 {solved}/{total}</p>{solved === 0 && <div className="mt-4 rounded-2xl bg-amber-50 px-4 py-3 text-sm font-bold text-amber-800">아직 형성평가를 풀지 않았어요.</div>}</div><div className="min-h-0 overflow-y-auto rounded-[1.5rem] border border-blue-100 bg-white p-5"><h3 className="font-black text-blue-950">형성평가 기록</h3><div className="mt-4 rounded-2xl bg-slate-50 p-4"><div className="mb-2 flex items-center justify-between text-sm font-black"><span className="text-slate-700">{data.gradeLabel} {data.units[1] || data.title}</span><span className="text-blue-700">{correct}/{total} · {percent}%</span></div><div className="h-3 overflow-hidden rounded-full bg-white"><div className="h-full rounded-full bg-blue-600" style={{ width: `${percent}%` }} /></div><div className="mt-2 text-xs font-bold text-slate-500">풀이 문항 {solved}/{total}</div></div><div className="mt-4 rounded-2xl bg-blue-50 px-4 py-3 text-sm font-bold text-blue-800">오답 문항 {wrongItems.length}개 · 추천 복습 영역: {weakestLabel}</div><div className="mt-4 max-h-[240px] overflow-auto space-y-2">{wrongItems.length === 0 && solved > 0 ? <div className="rounded-2xl bg-green-50 px-4 py-3 text-sm font-bold text-green-800">오답이 없습니다. 심화 문제에 도전해 보세요.</div> : wrongItems.map((item) => <div key={item.index} className="rounded-2xl bg-rose-50 px-4 py-3 text-xs font-bold text-rose-800">문제 {item.index + 1}. 정답: {item.answer} · {item.explain || "관련 개념을 복습하세요."}</div>)}</div><MisconceptionReport misconceptions={misconceptions} /><LearningPrescription steps={prescriptionSteps} setActive={setActive} /><FunctionConceptMap grade={grade} percent={percent} /><TeacherDashboard title="교사용 대시보드" gradeLabel={data.gradeLabel} percent={percent} solved={solved} total={total} misconceptions={misconceptions} reflections={reflections} /></div><div className="flex min-h-0 h-full flex-col rounded-[1.5rem] border border-blue-200 bg-gradient-to-br from-white to-purple-50 p-5 overflow-hidden"><h3 className="shrink-0 font-black text-blue-950">문제은행 기반 AI형 맞춤 추천</h3>{solved === 0 ? <div className="mt-4 shrink-0 rounded-2xl bg-blue-50 px-4 py-4 text-sm font-bold text-blue-800">먼저 형성평가를 풀면 약한 개념을 분석해 추천 문제를 제공합니다.</div> : <><div className="mt-4 shrink-0 rounded-2xl bg-orange-50 px-4 py-3"><div className="font-black text-orange-800">우선 복습 추천</div><div className="mt-1 text-sm font-bold text-slate-700">{weakestLabel}</div><div className="text-sm font-bold text-slate-500">정답률 {percent}% · 추천 난이도 {level}</div></div><div className="mt-3 shrink-0 space-y-1.5 text-xs font-bold leading-relaxed text-slate-700"><div>• 오답 문항의 핵심 개념을 먼저 확인하세요.</div><div>• 개념학습 → 탐구활동 → 형성평가 순서로 다시 연결됩니다.</div></div><button onClick={() => setShowRecommended((prev) => !prev)} className="mt-3 flex w-full shrink-0 items-center justify-center gap-2 rounded-2xl bg-purple-600 px-5 py-3 text-base font-black text-white shadow-lg shadow-purple-100 transition hover:bg-purple-700"><Sparkles className="h-5 w-5" /> {showRecommended ? "추천 문제 접기" : "AI 맞춤 문제 추천 받기"}</button>{!showRecommended && <button onClick={() => setActive("concept")} className="mt-3 flex w-full shrink-0 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-base font-black text-white shadow-lg shadow-blue-200 transition hover:bg-blue-700"><Star className="h-5 w-5" /> 맞춤 개념학습으로 이동</button>}{showRecommended && <div className="mt-3 min-h-0 flex-1 overflow-y-auto rounded-2xl bg-purple-50 p-3 pr-2"><div className="mb-3 text-sm font-black text-purple-900">추천 문제 세트</div><div className="space-y-3">{recommended.map((q, order) => { const selected = recommendAnswers[q.index]; return <div key={`${q.index}-${order}`} className="rounded-2xl bg-white p-3"><div className="mb-1 text-xs font-black text-purple-700">{order + 1}. {level}</div><div className="text-sm font-black text-slate-800">{q.q}</div><div className="mt-2 grid gap-2">{q.choices.map((choice) => <button key={choice} onClick={() => setRecommendAnswers((prev) => ({ ...prev, [q.index]: choice }))} className={`rounded-xl border px-3 py-2 text-left text-sm font-bold ${selected === choice ? "border-purple-500 bg-purple-600 text-white" : "border-slate-100 bg-slate-50 text-slate-700 hover:bg-purple-50"}`}>{choice}</button>)}</div>{selected && <div className={`mt-2 rounded-xl px-3 py-2 text-xs font-bold ${selected === q.answer ? "bg-green-50 text-green-800" : "bg-rose-50 text-rose-800"}`}>{selected === q.answer ? "정답입니다. " : `정답: ${q.answer}. `}{q.explain || "해설을 확인하세요."}</div>}</div>; })}</div></div>}</>}</div></div></Card>;
+  return (
+    <Card className="quest-growth-page h-full overflow-hidden p-5">
+      <div className="quest-growth-header mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+        <div>
+          <div className="text-xs font-black text-blue-700">✦ {data.gradeLabel} 성장 기록 퀘스트</div>
+          <h2 className="text-2xl font-black text-blue-950">형성평가 / 성장기록</h2>
+          <p className="mt-1 text-sm font-bold text-slate-600">형성평가 점수를 바탕으로 약한 개념을 분석하고 맞춤 복습을 추천합니다.</p>
+        </div>
+        <button onClick={() => setActive("assessment")} className="quest-button rounded-2xl px-6 py-3 text-base">🧭 형성평가 풀러가기</button>
+      </div>
+
+      <div className="quest-growth-grid grid h-[calc(100%-86px)] min-h-0 gap-4 overflow-hidden xl:grid-cols-[310px_1fr_370px]">
+        <div className="quest-growth-stat rounded-[1.7rem] p-5 text-center">
+          <div className="quest-growth-title">나의 형성평가 현황</div>
+          <div className="quest-ring mx-auto mt-5" style={{ "--p": `${percent}%` }}><div className="quest-ring-inner">{solved === 0 ? "0%" : `${percent}%`}</div></div>
+          <div className="mt-5 text-xl font-black text-blue-950">총점 <span className="text-blue-700">{solved === 0 ? "미응시" : `${correct}/${total}`}</span></div>
+          <p className="mt-1 text-sm font-bold text-slate-600">풀이 완료 문항 {solved}/{total}</p>
+          <div className="quest-crystal mt-7">💎</div>
+          {solved === 0 && <div className="mt-4 rounded-2xl bg-amber-50 px-4 py-3 text-sm font-black text-amber-800">아직 형성평가를 풀지 않았어요.</div>}
+        </div>
+
+        <div className="quest-growth-record min-h-0 overflow-y-auto rounded-[1.7rem] p-5">
+          <div className="quest-growth-title">형성평가 기록</div>
+          <div className="quest-progress-row mt-4">
+            <div className="quest-progress-icon">{grade === "middle2" ? "📐" : "🏔️"}</div>
+            <div className="min-w-0 flex-1">
+              <div className="mb-2 flex items-center justify-between gap-3 text-sm font-black"><span className="truncate text-blue-950">{data.gradeLabel} {data.units[1] || data.title}</span><span className="shrink-0 text-blue-700">{correct}/{total} · {percent}%</span></div>
+              <div className="quest-progress-bar"><div style={{ width: `${percent}%` }} /></div>
+              <div className="mt-2 text-xs font-bold text-slate-500">풀이 문항 {solved}/{total}</div>
+            </div>
+          </div>
+          <div className="mt-4 rounded-2xl bg-blue-50 px-4 py-3 text-sm font-black text-blue-800">오답 문항 {wrongItems.length}개 · 추천 복습 영역: {weakestLabel}</div>
+          <div className="quest-report mt-5">
+            <div className="flex items-center gap-2 text-base font-black text-rose-900"><span>⚠️</span> 함수 오개념 진단 리포트</div>
+            {wrongItems.length === 0 && solved > 0 ? <div className="mt-3 rounded-2xl bg-white/80 px-4 py-3 text-sm font-bold text-emerald-800">오답이 없습니다. 심화 문제에 도전해 보세요.</div> : wrongItems.map((item) => <div key={item.index} className="mt-3 rounded-2xl bg-white/80 px-4 py-3 text-sm font-bold text-rose-900">문제 {item.index + 1}. 정답: {item.answer} · {item.explain || "관련 개념을 복습하세요."}</div>)}
+          </div>
+          <div className="quest-prescription mt-5">
+            <div className="text-base font-black text-emerald-950">🧪 나만의 함수 처방전</div>
+            <div className="mt-3 grid gap-2 md:grid-cols-2">
+              {prescriptionSteps.slice(0, 4).map((step) => <button key={step.step} onClick={() => step.action.includes("개념") ? setActive("concept") : step.action.includes("탐구") ? setActive("explore") : setActive("growth")} className="rounded-2xl bg-white/75 px-4 py-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"><div className="text-xs font-black text-emerald-700">{step.step} · {step.title}</div><div className="mt-1 text-xs font-bold leading-relaxed text-slate-700">{step.desc}</div></button>)}
+            </div>
+          </div>
+        </div>
+
+        <div className="quest-ai-panel flex min-h-0 flex-col overflow-hidden rounded-[1.7rem] p-5">
+          <div className="quest-growth-title">문제은행 기반 AI형 맞춤 추천</div>
+          {solved === 0 ? <div className="mt-4 rounded-2xl bg-blue-50 px-4 py-4 text-sm font-black leading-relaxed text-blue-800">먼저 형성평가를 풀면 약한 개념을 분석해 추천 문제를 제공합니다.</div> : <>
+            <div className="quest-priority mt-4"><div className="text-lg font-black text-orange-800">🏅 우선 복습 추천</div><div className="mt-2 text-base font-black text-blue-950">{weakestLabel}</div><div className="mt-1 text-sm font-bold text-slate-600">정답률 {percent}% · 추천 난이도 {level}</div><div className="absolute right-4 top-4 text-5xl">💠</div></div>
+            <div className="mt-4 space-y-1.5 text-sm font-bold leading-relaxed text-slate-700"><div>• 오답 문항의 핵심 개념을 먼저 확인하세요.</div><div>• 개념학습 → 탐구활동 → 형성평가 순서로 다시 연결됩니다.</div></div>
+            <button onClick={() => setShowRecommended((prev) => !prev)} className="quest-magic-button mt-4 w-full rounded-2xl px-5 py-3 text-base font-black text-white">✨ {showRecommended ? "추천 문제 접기" : "AI 맞춤 문제 추천 받기"}</button>
+            {!showRecommended && <button onClick={() => setActive("concept")} className="quest-button mt-3 w-full rounded-2xl px-5 py-3 text-base">☆ 맞춤 개념학습으로 이동</button>}
+            {showRecommended && <div className="mt-3 min-h-0 flex-1 overflow-y-auto rounded-2xl bg-purple-50/80 p-3 pr-2"><div className="mb-3 text-sm font-black text-purple-900">추천 문제 세트</div><div className="space-y-3">{recommended.map((q, order) => { const selected = recommendAnswers[q.index]; return <div key={`${q.index}-${order}`} className="rounded-2xl bg-white p-3 shadow-sm"><div className="mb-1 text-xs font-black text-purple-700">{order + 1}. {level}</div><div className="text-sm font-black text-slate-800">{q.q}</div><div className="mt-2 grid gap-2">{q.choices.map((choice) => <button key={choice} onClick={() => setRecommendAnswers((prev) => ({ ...prev, [q.index]: choice }))} className={`rounded-xl border px-3 py-2 text-left text-sm font-bold ${selected === choice ? "border-purple-500 bg-purple-600 text-white" : "border-slate-100 bg-slate-50 text-slate-700 hover:bg-purple-50"}`}>{choice}</button>)}</div>{selected && <div className={`mt-2 rounded-xl px-3 py-2 text-xs font-bold ${selected === q.answer ? "bg-green-50 text-green-800" : "bg-rose-50 text-rose-800"}`}>{selected === q.answer ? "정답입니다. " : `정답: ${q.answer}. `}{q.explain || "해설을 확인하세요."}</div>}</div>; })}</div></div>}
+          </>}
+          <div className="mt-auto pt-4 text-center text-5xl">📖💎</div>
+        </div>
+      </div>
+    </Card>
+  );
 }
 
 function makeGraphExplanationFeedback(text, grade = "middle1") {
@@ -5498,7 +6234,31 @@ function makeGraphExplanationFeedback(text, grade = "middle1") {
 
 function GraphExplanationBox({ grade, reflection, onSave }) {
   const [text, setText] = useState(reflection?.text || "");
-  useEffect(() => setText(reflection?.text || ""), [reflection?.text]);
+  const [localFeedback, setLocalFeedback] = useState(reflection?.feedback || "");
+  const [savedAt, setSavedAt] = useState(reflection?.updatedAt || "");
+
+  useEffect(() => {
+    setText(reflection?.text || "");
+    setLocalFeedback(reflection?.feedback || "");
+    setSavedAt(reflection?.updatedAt || "");
+  }, [reflection?.text, reflection?.feedback, reflection?.updatedAt]);
+
+  const handleSave = () => {
+    const trimmed = String(text || "").trim();
+    const feedback = makeGraphExplanationFeedback(trimmed, grade);
+    const now = new Date().toISOString();
+
+    setText(trimmed);
+    setLocalFeedback(feedback);
+    setSavedAt(now);
+
+    if (typeof onSave === "function") {
+      onSave(trimmed);
+    }
+  };
+
+  const isEmpty = String(text || "").trim().length === 0;
+
   return (
     <div className="rounded-[1.5rem] border border-indigo-100 bg-indigo-50/70 p-4">
       <h3 className="text-base font-black text-indigo-950">그래프 설명 글쓰기</h3>
@@ -5509,8 +6269,16 @@ function GraphExplanationBox({ grade, reflection, onSave }) {
         className="mt-3 h-20 w-full resize-none rounded-2xl border border-indigo-100 bg-white px-4 py-3 text-sm font-bold text-slate-700 outline-none focus:border-indigo-400"
         placeholder={grade === "middle3" ? "예) p가 커질수록 꼭짓점과 축이 오른쪽으로 이동한다." : grade === "middle2" ? "예) b가 커질수록 직선이 위로 평행이동한다." : "예) 정비례 그래프는 원점을 지나는 직선이다."}
       />
-      <button onClick={() => onSave?.(text)} className="mt-2 w-full rounded-2xl bg-indigo-600 px-4 py-2.5 text-sm font-black text-white shadow-md shadow-indigo-100">설명 저장하고 피드백 받기</button>
-      {reflection?.feedback && <div className="mt-3 rounded-2xl bg-white px-4 py-3 text-xs font-bold leading-relaxed text-indigo-900">AI형 피드백: {reflection.feedback}</div>}
+      <button
+        type="button"
+        onClick={handleSave}
+        disabled={isEmpty}
+        className="mt-2 w-full rounded-2xl bg-indigo-600 px-4 py-2.5 text-sm font-black text-white shadow-md shadow-indigo-100 transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none"
+      >
+        설명 저장하고 피드백 받기
+      </button>
+      {savedAt && <div className="mt-2 rounded-2xl bg-emerald-50 px-4 py-2 text-xs font-black text-emerald-700">저장 완료 · 피드백이 업데이트되었습니다.</div>}
+      {localFeedback && <div className="mt-3 rounded-2xl bg-white px-4 py-3 text-xs font-bold leading-relaxed text-indigo-900">AI형 피드백: {localFeedback}</div>}
     </div>
   );
 }
@@ -5599,9 +6367,34 @@ function TeacherDashboard({ title = "교사용 대시보드", summary, gradeLabe
   );
 }
 
-function Card({ children, className = "" }) { return <div className={`rounded-[2rem] border border-blue-200 bg-gradient-to-br from-white via-slate-50 to-blue-50/70 shadow-md ${className}`}>{children}</div>; }
+function Card({ children, className = "" }) {
+  return (
+    <div className={`quest-card rounded-[1.7rem] ${className}`}>
+      {children}
+    </div>
+  );
+}
+
 function Progress({ value }) { return <div className="h-4 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-blue-600" style={{ width: `${value}%` }} /></div>; }
-function IconBadge({ icon: Icon, color = "blue", compact = false }) { const colors = { blue: "bg-blue-50 text-blue-700", green: "bg-green-50 text-green-700", purple: "bg-purple-50 text-purple-700", orange: "bg-orange-50 text-orange-700" }; return <div className={`flex shrink-0 items-center justify-center rounded-2xl ${colors[color]} ${compact ? "h-11 w-11" : "h-14 w-14"}`}><Icon className={compact ? "h-5 w-5" : "h-7 w-7"} /></div>; }
+function IconBadge({ icon: Icon, color = "blue", compact = false }) {
+  const colors = {
+    blue: "from-blue-100 to-blue-50 text-blue-700 border-blue-200",
+    green: "from-emerald-100 to-emerald-50 text-emerald-700 border-emerald-200",
+    purple: "from-purple-100 to-purple-50 text-purple-700 border-purple-200",
+    orange: "from-amber-100 to-orange-50 text-orange-700 border-amber-200",
+  };
+
+  return (
+    <div
+      className={`flex shrink-0 items-center justify-center rounded-2xl border bg-gradient-to-br ${
+        colors[color] || colors.blue
+      } ${compact ? "h-11 w-11" : "h-14 w-14"} shadow-sm`}
+    >
+      <Icon className={compact ? "h-5 w-5" : "h-7 w-7"} />
+    </div>
+  );
+}
+
 function QuickButton({ icon: Icon, label, onClick, color, compact = false }) { return <button onClick={onClick} className={`group flex items-center justify-center gap-3 rounded-[1.4rem] border border-blue-100 bg-white font-black text-blue-950 shadow-sm transition hover:-translate-y-1 hover:border-blue-300 hover:shadow-lg ${compact ? "p-3 text-base" : "p-5 text-lg"}`}><IconBadge icon={Icon} color={color} compact={compact} />{label}</button>; }
 function StudentIllustration({ compact = false }) { return <div className={`relative mx-auto shrink-0 overflow-hidden rounded-[2rem] bg-gradient-to-b from-blue-100 to-blue-50 md:mx-0 ${compact ? "h-28 w-28" : "h-40 w-40"}`}><div className="absolute left-1/2 top-5 h-12 w-12 -translate-x-1/2 rounded-full bg-amber-100" /><div className="absolute left-[36px] top-3 h-7 w-14 rounded-full bg-amber-900" /><div className="absolute left-[42px] top-[38px] h-2 w-2 rounded-full bg-slate-800" /><div className="absolute left-[66px] top-[38px] h-2 w-2 rounded-full bg-slate-800" /><div className="absolute left-[50px] top-[52px] h-2 w-8 rounded-full border-b-4 border-rose-400" /><div className="absolute bottom-0 left-1/2 h-40 w-20 -translate-x-1/2 rounded-t-[3rem] bg-blue-600" /><div className="absolute right-3 top-14 flex h-9 w-9 items-center justify-center rounded-full bg-white text-xl shadow-md">👋</div></div>; }
 function AxesMini() { return <svg width="96" height="96" viewBox="0 0 96 96" aria-hidden="true"><line x1="48" y1="12" x2="48" y2="84" stroke="#2563eb" strokeWidth="3" /><line x1="12" y1="48" x2="84" y2="48" stroke="#2563eb" strokeWidth="3" /><polygon points="48,8 42,18 54,18" fill="#2563eb" /><polygon points="88,48 78,42 78,54" fill="#2563eb" /><text x="54" y="18" fontSize="14" fill="#1d4ed8" fontWeight="800">y</text><text x="77" y="41" fontSize="14" fill="#1d4ed8" fontWeight="800">x</text></svg>; }
