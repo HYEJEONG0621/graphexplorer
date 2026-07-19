@@ -2236,3 +2236,2199 @@ body {
     min-height: 520px;
   }
 }
+
+/* =========================================================
+   TABLET 100% VIEW FIX
+   목표: 태블릿 가로 화면에서 페이지 전체 세로 스크롤 제거
+   - 홈: 4열 × 2행 유지
+   - 학습준비: 문항 2열 × 2행 + 보기 2열 × 2행
+   - 개념학습 목록: 제목 중심의 간단한 2열 × 2행 버튼
+   ========================================================= */
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+}
+
+body {
+  overflow: hidden;
+}
+
+.quest-bg {
+  height: 100dvh;
+  min-height: 100dvh !important;
+  overflow: hidden !important;
+}
+
+.quest-bg > .mx-auto {
+  height: 100dvh;
+  min-height: 0 !important;
+}
+
+.quest-bg main {
+  height: 100%;
+  min-height: 0 !important;
+  overflow: hidden;
+}
+
+.quest-bg main > section {
+  min-height: 0 !important;
+}
+
+/* 태블릿 가로 화면: 1024px~1366px */
+@media (min-width: 1024px) and (max-width: 1366px) {
+  .quest-bg > .mx-auto {
+    gap: 0.55rem !important;
+    padding: 0.4rem !important;
+  }
+
+  .quest-sidebar {
+    display: block !important;
+    width: 184px !important;
+    padding: 0.7rem !important;
+    border-radius: 1.35rem !important;
+  }
+
+  .quest-sidebar > button:first-child {
+    margin-bottom: 0.65rem !important;
+    padding: 0.55rem !important;
+  }
+
+  .quest-sidebar > button:first-child > div:first-child {
+    width: 58px !important;
+    height: 58px !important;
+    font-size: 1.8rem !important;
+  }
+
+  .quest-sidebar > button:first-child > div:nth-child(2) {
+    margin-top: 0.35rem !important;
+    padding: 0.3rem 0.65rem !important;
+    font-size: 0.75rem !important;
+  }
+
+  .quest-sidebar nav {
+    display: grid;
+    gap: 0.28rem !important;
+  }
+
+  .quest-nav-item {
+    min-height: 38px !important;
+    gap: 0.45rem !important;
+    border-radius: 0.8rem !important;
+    padding: 0.42rem 0.55rem !important;
+    font-size: 0.76rem !important;
+  }
+
+  .quest-nav-item span:first-child {
+    width: 26px !important;
+    height: 26px !important;
+    font-size: 0.95rem !important;
+  }
+
+  .quest-sidebar .my-6 {
+    margin-top: 0.55rem !important;
+    margin-bottom: 0.55rem !important;
+  }
+
+  .quest-sidebar > button[class*="settings"],
+  .quest-sidebar > button:last-of-type {
+    padding: 0.5rem 0.65rem !important;
+    font-size: 0.78rem !important;
+  }
+
+  .quest-sidebar > div:last-child {
+    display: none !important;
+  }
+
+  .quest-header {
+    margin: 0 !important;
+    padding: 0.65rem 0.9rem !important;
+    border-radius: 1.25rem !important;
+  }
+
+  .quest-header > div {
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 0.55rem !important;
+  }
+
+  .quest-header h1 {
+    margin-top: 0.1rem !important;
+    font-size: 1.45rem !important;
+    line-height: 1.15 !important;
+  }
+
+  .quest-header p {
+    display: none !important;
+  }
+
+  .quest-header .text-sm.font-black.text-blue-700 {
+    font-size: 0.67rem !important;
+  }
+
+  .quest-header .flex.flex-wrap.items-center.gap-2 {
+    flex-wrap: nowrap !important;
+    gap: 0.3rem !important;
+  }
+
+  .quest-header button,
+  .quest-header .quest-badge,
+  .quest-header .rounded-2xl.border.border-amber-200 {
+    white-space: nowrap;
+    border-radius: 0.75rem !important;
+    padding: 0.42rem 0.62rem !important;
+    font-size: 0.72rem !important;
+  }
+
+  /* 홈 화면을 태블릿에서도 4 × 2로 고정 */
+  .quest-home-grid,
+  .quest-grade-home-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    grid-template-rows: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.55rem !important;
+    overflow: hidden !important;
+  }
+
+  .quest-home-card,
+  .quest-grade-home-card {
+    padding: 0.72rem !important;
+    border-radius: 1.15rem !important;
+  }
+
+  .quest-home-art,
+  .quest-grade-home-art {
+    width: 48px !important;
+    height: 48px !important;
+    border-radius: 14px !important;
+    font-size: 1.7rem !important;
+  }
+
+  .quest-home-tag {
+    padding: 0.24rem 0.45rem !important;
+    font-size: 0.58rem !important;
+  }
+
+  .quest-home-card h3,
+  .quest-grade-home-card h3 {
+    font-size: 0.96rem !important;
+  }
+
+  .quest-home-card p,
+  .quest-grade-home-card p {
+    margin-top: 0.35rem !important;
+    font-size: 0.68rem !important;
+    line-height: 1.35 !important;
+  }
+
+  .quest-home-card .quest-button,
+  .quest-grade-home-card .quest-button {
+    min-height: 34px !important;
+    padding: 0.4rem 0.55rem !important;
+    font-size: 0.7rem !important;
+    box-shadow: 0 3px 0 #0b348f !important;
+  }
+
+  .quest-home-card .rounded-2xl.border,
+  .quest-grade-home-card .rounded-2xl.border,
+  .quest-note {
+    padding: 0.36rem 0.55rem !important;
+    font-size: 0.64rem !important;
+  }
+
+  .quest-point-display {
+    min-height: 44px !important;
+    margin-top: 0.45rem !important;
+    padding: 0.45rem !important;
+    font-size: 1.25rem !important;
+  }
+
+  /* 학습준비: 화면 전체 압축 */
+  .quest-ready-screen {
+    padding: 0.8rem !important;
+  }
+
+  .quest-ready-screen > div:first-child {
+    margin-bottom: 0.55rem !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 0.5rem !important;
+  }
+
+  .quest-ready-screen > div:first-child h2 {
+    font-size: 1.35rem !important;
+  }
+
+  .quest-ready-screen > div:first-child p {
+    display: none !important;
+  }
+
+  .quest-progress-badge {
+    padding: 0.45rem 0.7rem !important;
+    font-size: 0.7rem !important;
+  }
+
+  .quest-ready-screen > .grid {
+    height: calc(100% - 52px) !important;
+    grid-template-columns: minmax(0, 1fr) 270px !important;
+    gap: 0.55rem !important;
+  }
+
+  .quest-ready-screen > .grid > div:first-child {
+    gap: 0.5rem !important;
+  }
+
+  .quest-diagnosis-card {
+    padding: 0.62rem !important;
+    border-radius: 1.05rem !important;
+  }
+
+  .quest-diagnosis-card > div:first-child {
+    margin-bottom: 0.35rem !important;
+  }
+
+  .quest-mini-icon {
+    width: 30px !important;
+    height: 30px !important;
+    border-radius: 10px !important;
+    font-size: 0.95rem !important;
+  }
+
+  .quest-ribbon,
+  .quest-diagnosis-card > div:first-child > div:last-child {
+    padding: 0.18rem 0.4rem !important;
+    font-size: 0.58rem !important;
+  }
+
+  .quest-diagnosis-card h3 {
+    min-height: 34px !important;
+    font-size: 0.77rem !important;
+    line-height: 1.25 !important;
+  }
+
+  /* 핵심 변경: 보기 4개를 2열 × 2행으로 */
+  .quest-diagnosis-card > .mt-3.grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    grid-template-rows: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.35rem !important;
+    margin-top: 0.35rem !important;
+  }
+
+  .quest-diagnosis-card .quest-choice-button {
+    min-height: 34px !important;
+    padding: 0.35rem 0.45rem !important;
+    border-radius: 0.7rem !important;
+    font-size: 0.67rem !important;
+    line-height: 1.15 !important;
+    text-align: center !important;
+  }
+
+  .quest-diagnosis-card > div:last-child[class*="mt-3"] {
+    margin-top: 0.3rem !important;
+    padding: 0.3rem 0.45rem !important;
+    font-size: 0.58rem !important;
+    line-height: 1.2 !important;
+  }
+
+  .quest-advice-panel {
+    padding: 0.65rem !important;
+    border-radius: 1.05rem !important;
+  }
+
+  .quest-advice-panel > div {
+    padding: 0.65rem !important;
+    border-radius: 0.9rem !important;
+  }
+
+  .quest-advice-panel > div:first-child .h-14 {
+    width: 38px !important;
+    height: 38px !important;
+    font-size: 1.3rem !important;
+  }
+
+  .quest-advice-panel h3 {
+    font-size: 0.9rem !important;
+  }
+
+  .quest-advice-panel .mt-3.rounded-2xl.bg-slate-50\/90 {
+    margin-top: 0.4rem !important;
+    padding: 0.55rem !important;
+    font-size: 0.65rem !important;
+    line-height: 1.35 !important;
+  }
+
+  .quest-advice-panel > div:nth-child(2) {
+    margin-top: 0.45rem !important;
+  }
+
+  .quest-advice-panel > div:nth-child(2) .mt-3 {
+    margin-top: 0.35rem !important;
+    font-size: 0.62rem !important;
+    line-height: 1.3 !important;
+  }
+
+  .quest-advice-panel > button {
+    margin-top: 0.45rem !important;
+    padding: 0.55rem !important;
+    font-size: 0.72rem !important;
+  }
+
+  /* 개념학습 목록: 제목 중심의 2 × 2 선택 버튼 */
+  .concept-quest-screen {
+    padding: 0.8rem !important;
+  }
+
+  .concept-quest-screen > div:first-child {
+    margin-bottom: 0.55rem !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+  }
+
+  .concept-quest-screen > div:first-child h2 {
+    font-size: 1.35rem !important;
+  }
+
+  .concept-quest-screen > div:first-child p,
+  .concept-quest-screen .quest-section-kicker {
+    display: none !important;
+  }
+
+  .concept-quest-grid {
+    height: calc(100% - 48px) !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    grid-template-rows: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.65rem !important;
+    overflow: hidden !important;
+  }
+
+  .concept-quest-card {
+    min-height: 0 !important;
+    justify-content: center !important;
+    padding: 0.75rem !important;
+    border-radius: 1.15rem !important;
+  }
+
+  .concept-quest-card .concept-card-topline,
+  .concept-quest-card .concept-magic-row,
+  .concept-quest-card p,
+  .concept-quest-card > div[class*="bg-white/55"],
+  .concept-quest-card .concept-learn-button {
+    display: none !important;
+  }
+
+  .concept-quest-card h3 {
+    margin: 0 !important;
+    font-size: 1.55rem !important;
+    line-height: 1.2 !important;
+  }
+
+  .concept-quest-card h3::after {
+    content: "  ›";
+    color: #2563eb;
+  }
+}
+
+/* 태블릿 세로 화면은 메뉴를 숨기고 본문 폭을 확보 */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .quest-bg > .mx-auto {
+    padding: 0.4rem !important;
+  }
+
+  .quest-header {
+    padding: 0.55rem 0.75rem !important;
+  }
+
+  .quest-header h1 {
+    font-size: 1.25rem !important;
+  }
+
+  .quest-header p,
+  .quest-header .text-sm.font-black.text-blue-700 {
+    display: none !important;
+  }
+
+  .quest-ready-screen,
+  .concept-quest-screen {
+    padding: 0.7rem !important;
+  }
+
+  .quest-ready-screen > .grid {
+    height: calc(100% - 58px) !important;
+    grid-template-columns: 1fr 235px !important;
+    gap: 0.45rem !important;
+  }
+
+  .quest-diagnosis-card > .mt-3.grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.3rem !important;
+  }
+
+  .quest-diagnosis-card .quest-choice-button {
+    padding: 0.3rem !important;
+    font-size: 0.62rem !important;
+    text-align: center !important;
+  }
+
+  .concept-quest-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    grid-template-rows: repeat(2, minmax(0, 1fr)) !important;
+    overflow: hidden !important;
+  }
+
+  .concept-quest-card .concept-card-topline,
+  .concept-quest-card .concept-magic-row,
+  .concept-quest-card p,
+  .concept-quest-card > div[class*="bg-white/55"],
+  .concept-quest-card .concept-learn-button {
+    display: none !important;
+  }
+
+  .concept-quest-card {
+    justify-content: center !important;
+  }
+}
+
+/* =========================================================
+   FINAL: 전체 페이지 자연 스크롤 + 잘림 방지 + 사이드바 높이 자동
+   언어 설정 메뉴 제거 버전과 함께 사용
+   ========================================================= */
+
+html,
+body,
+#root {
+  width: 100% !important;
+  height: auto !important;
+  min-height: 100% !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+}
+
+body {
+  min-height: 100dvh !important;
+}
+
+.quest-bg {
+  width: 100% !important;
+  height: auto !important;
+  min-height: 100dvh !important;
+  overflow: visible !important;
+}
+
+.quest-bg > .mx-auto {
+  width: 100% !important;
+  height: auto !important;
+  min-height: 100dvh !important;
+  align-items: flex-start !important;
+  overflow: visible !important;
+}
+
+.quest-sidebar {
+  position: relative !important;
+  top: auto !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+  align-self: flex-start !important;
+  padding-bottom: 14px !important;
+}
+
+.quest-sidebar::after {
+  bottom: 0 !important;
+}
+
+main,
+.quest-main {
+  height: auto !important;
+  min-height: calc(100dvh - 16px) !important;
+  overflow: visible !important;
+}
+
+.quest-header {
+  position: relative !important;
+  top: auto !important;
+  flex-shrink: 0 !important;
+}
+
+.quest-content,
+.quest-content-fixed,
+.quest-content-scroll {
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  overflow-x: visible !important;
+  overflow-y: visible !important;
+  padding-right: 0 !important;
+}
+
+/* 각 탭의 최상위 카드가 내부 내용을 자르지 않도록 처리 */
+.quest-content > .quest-card,
+.quest-content > [class*="quest-"],
+.quest-content > div {
+  height: auto !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+}
+
+/* 홈은 4×2 배열을 유지하되 화면이 낮으면 페이지가 자연스럽게 늘어나도록 함 */
+.quest-home-grid,
+.quest-grade-home-grid {
+  height: auto !important;
+  min-height: 620px !important;
+  overflow: visible !important;
+}
+
+.quest-home-card,
+.quest-grade-home-card {
+  min-height: 290px !important;
+}
+
+/* 학습준비와 개념 목록도 카드 안쪽 잘림 방지 */
+.quest-ready-screen,
+.concept-quest-screen,
+.concept-quest-detail,
+.quest-ai-lab,
+.quest-explore-shell,
+.quest-game-zone,
+.quest-assessment-page,
+.quest-growth-page,
+.quest-grade-concept-screen,
+.quest-grade-concept-detail,
+.quest-grade-assessment,
+.quest-grade-quick-game {
+  height: auto !important;
+  min-height: 620px !important;
+  overflow: visible !important;
+}
+
+.quest-ready-screen > .grid,
+.concept-quest-grid,
+.concept-quest-detail > div[class*="h-[calc"],
+.quest-ai-lab > div,
+.quest-explore-shell > div {
+  height: auto !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+}
+
+/* 가로형 태블릿·낮은 노트북에서는 사이드바와 헤더를 더 작게 */
+@media (min-width: 1024px) and (max-height: 900px) {
+  .quest-bg > .mx-auto {
+    padding: 6px !important;
+    gap: 8px !important;
+  }
+
+  .quest-sidebar {
+    width: 210px !important;
+    padding: 9px !important;
+  }
+
+  .quest-sidebar > button:first-child {
+    margin-bottom: 7px !important;
+    padding: 7px 6px !important;
+  }
+
+  .quest-sidebar > button:first-child > div:first-child {
+    width: 58px !important;
+    height: 58px !important;
+  }
+
+  .quest-sidebar > button:first-child > div:last-child {
+    margin-top: 5px !important;
+    padding: 5px 10px !important;
+    font-size: 12px !important;
+  }
+
+  .quest-sidebar nav {
+    gap: 5px !important;
+  }
+
+  .quest-sidebar nav button,
+  .quest-nav-item {
+    min-height: 40px !important;
+    padding: 6px 9px !important;
+    font-size: 12px !important;
+  }
+
+  .quest-sidebar nav button span:first-child,
+  .quest-nav-item span:first-child {
+    width: 27px !important;
+    height: 27px !important;
+    font-size: 14px !important;
+  }
+
+  .quest-header {
+    padding: 9px 14px !important;
+  }
+
+  .quest-header h1 {
+    font-size: 23px !important;
+  }
+
+  .quest-header p {
+    font-size: 11px !important;
+  }
+
+  .quest-header button,
+  .quest-header .quest-badge,
+  .quest-header div[class*="rounded-2xl"] {
+    padding-top: 7px !important;
+    padding-bottom: 7px !important;
+  }
+
+  .quest-home-grid,
+  .quest-grade-home-grid {
+    min-height: 590px !important;
+  }
+}
+
+/* 태블릿 세로 및 작은 화면에서는 왼쪽 메뉴를 숨기고 본문만 표시 */
+@media (max-width: 1023px) {
+  .quest-bg > .mx-auto {
+    display: block !important;
+  }
+
+  main,
+  .quest-main {
+    width: 100% !important;
+    min-height: 100dvh !important;
+  }
+
+  .quest-home-grid,
+  .quest-grade-home-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    grid-template-rows: none !important;
+    min-height: 0 !important;
+  }
+}
+
+
+/* =========================================================
+   최종 레이아웃: 학년 선택을 사이드바로 이동하고 본문 폭·높이 확보
+   ========================================================= */
+.quest-header-compact {
+  min-height: 0 !important;
+  height: auto !important;
+  overflow: visible !important;
+}
+
+.quest-sidebar {
+  display: flex;
+  flex-direction: column;
+}
+
+.quest-profile-card {
+  margin-bottom: 0 !important;
+}
+
+.quest-sidebar-nav {
+  overflow: hidden;
+}
+
+.quest-sidebar-status,
+.quest-grade-switcher {
+  position: relative;
+  z-index: 2;
+}
+
+@media (min-width: 1024px) {
+  .quest-bg > .mx-auto {
+    max-width: none !important;
+  }
+
+  .quest-sidebar {
+    width: 220px !important;
+    min-width: 220px !important;
+  }
+
+  .quest-header-compact {
+    padding: 10px 18px !important;
+  }
+
+  .quest-header-compact h1 {
+    font-size: 26px !important;
+    line-height: 1.08 !important;
+  }
+
+  .quest-header-compact p {
+    font-size: 11px !important;
+    line-height: 1.2 !important;
+  }
+}
+
+@media (min-width: 1200px) and (max-height: 900px) {
+  .quest-sidebar {
+    width: 220px !important;
+    min-width: 220px !important;
+    padding: 8px !important;
+  }
+
+  .quest-profile-card {
+    min-height: 118px !important;
+    height: 118px !important;
+    padding: 7px !important;
+  }
+
+  .quest-profile-card > div:first-child {
+    width: 60px !important;
+    height: 60px !important;
+    font-size: 28px !important;
+  }
+
+  .quest-profile-card > div:last-child {
+    margin-top: 5px !important;
+    padding: 5px 10px !important;
+    font-size: 12px !important;
+  }
+
+  .quest-sidebar-status {
+    margin-top: 6px !important;
+    gap: 5px !important;
+  }
+
+  .quest-sidebar-status > * {
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+    font-size: 10px !important;
+  }
+
+  .quest-grade-switcher {
+    margin-top: 6px !important;
+    padding: 5px !important;
+    gap: 4px !important;
+  }
+
+  .quest-grade-switcher button {
+    padding: 6px 2px !important;
+    font-size: 11px !important;
+  }
+
+  .quest-sidebar-nav {
+    margin-top: 6px !important;
+    gap: 5px !important;
+  }
+
+  .quest-sidebar-nav .quest-nav-item {
+    height: 41px !important;
+    min-height: 41px !important;
+    padding: 5px 9px !important;
+    font-size: 12px !important;
+  }
+
+  .quest-header,
+  .quest-header-compact {
+    min-height: 92px !important;
+    max-height: 92px !important;
+    height: 92px !important;
+    padding: 9px 18px !important;
+  }
+
+  .quest-header-compact h1 {
+    font-size: 25px !important;
+  }
+
+  .quest-content {
+    height: calc(100dvh - 118px) !important;
+  }
+}
+
+/* =========================================================
+   FINAL LAYOUT V3
+   - 상단 대형 헤더 완전 제거
+   - 학년 선택/체험 종료는 왼쪽 사이드바에서 처리
+   - 오른쪽 학습 영역을 브라우저 높이 전체로 확대
+   - 홈은 4×2 한 화면, 긴 학습 화면은 오른쪽 영역만 스크롤
+   ========================================================= */
+
+@media (min-width: 1024px) {
+  html,
+  body,
+  #root {
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+    margin: 0;
+    overflow: hidden !important;
+  }
+
+  .quest-bg {
+    width: 100%;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    overflow: hidden !important;
+  }
+
+  .quest-bg > .mx-auto {
+    width: 100% !important;
+    max-width: none !important;
+    height: 100dvh !important;
+    min-height: 0 !important;
+    padding: 6px !important;
+    gap: 8px !important;
+    overflow: hidden !important;
+  }
+
+  .quest-main-shell {
+    height: calc(100dvh - 12px) !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .quest-content {
+    width: 100%;
+    height: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+  }
+
+  .quest-content-home,
+  .quest-content-ready,
+  .quest-content-concept-list {
+    overflow: hidden !important;
+  }
+
+  .quest-content-scroll {
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+
+  /* 이전 단계에서 지정한 620px/290px 강제 최소 높이 해제 */
+  .quest-home-grid,
+  .quest-grade-home-grid,
+  .quest-home-card,
+  .quest-grade-home-card,
+  .quest-ready-screen,
+  .concept-quest-screen,
+  .concept-quest-detail,
+  .quest-ai-lab,
+  .quest-explore-shell,
+  .quest-game-zone,
+  .quest-assessment-page,
+  .quest-growth-page,
+  .quest-grade-concept-screen,
+  .quest-grade-concept-detail,
+  .quest-grade-assessment,
+  .quest-grade-quick-game {
+    min-height: 0 !important;
+  }
+
+  /* 홈 화면: 오른쪽 전체를 4열×2행으로 사용 */
+  .quest-content-home .quest-home-grid,
+  .quest-content-home .quest-grade-home-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    grid-template-rows: repeat(2, minmax(0, 1fr)) !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    gap: 10px !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .quest-content-home .quest-home-card,
+  .quest-content-home .quest-grade-home-card {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* 학습준비와 개념 목록은 오른쪽 전체 높이 사용 */
+  .quest-content-ready > .quest-ready-screen,
+  .quest-content-concept-list > .concept-quest-screen {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* 긴 탭: 바깥 학습 영역에서만 자연스럽게 스크롤 */
+  .quest-content-scroll > * {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 100% !important;
+  }
+
+  .quest-content-scroll .concept-quest-detail,
+  .quest-content-scroll .quest-ai-lab,
+  .quest-content-scroll .quest-explore-shell,
+  .quest-content-scroll .quest-game-zone,
+  .quest-content-scroll .quest-assessment-page,
+  .quest-content-scroll .quest-growth-page,
+  .quest-content-scroll .quest-grade-concept-screen,
+  .quest-content-scroll .quest-grade-concept-detail,
+  .quest-content-scroll .quest-grade-assessment,
+  .quest-content-scroll .quest-grade-quick-game {
+    height: auto !important;
+    min-height: 100% !important;
+    overflow: visible !important;
+  }
+
+  /* 왼쪽 메뉴도 화면 안에 전부 보이도록 최종 압축 */
+  .quest-sidebar {
+    width: 218px !important;
+    min-width: 218px !important;
+    height: calc(100dvh - 12px) !important;
+    min-height: 0 !important;
+    padding: 8px !important;
+    overflow: hidden !important;
+  }
+
+  .quest-profile-card {
+    height: 118px !important;
+    min-height: 118px !important;
+    padding: 7px !important;
+  }
+
+  .quest-profile-card > div:first-child {
+    width: 58px !important;
+    height: 58px !important;
+    font-size: 27px !important;
+  }
+
+  .quest-profile-card > div:last-child {
+    margin-top: 5px !important;
+    padding: 5px 10px !important;
+    font-size: 12px !important;
+  }
+
+  .quest-sidebar-status {
+    margin-top: 6px !important;
+    gap: 5px !important;
+  }
+
+  .quest-sidebar-status > * {
+    min-height: 31px !important;
+    padding: 5px 7px !important;
+    font-size: 10px !important;
+  }
+
+  .quest-grade-switcher {
+    margin-top: 6px !important;
+    padding: 5px !important;
+    gap: 4px !important;
+  }
+
+  .quest-grade-switcher button {
+    min-height: 31px !important;
+    padding: 5px 2px !important;
+    font-size: 11px !important;
+  }
+
+  .quest-sidebar-nav {
+    margin-top: 6px !important;
+    gap: 5px !important;
+    overflow: hidden !important;
+  }
+
+  .quest-sidebar-nav .quest-nav-item {
+    height: 42px !important;
+    min-height: 42px !important;
+    padding: 5px 9px !important;
+    border-radius: 14px !important;
+    font-size: 12px !important;
+  }
+
+  .quest-sidebar-nav .quest-nav-item span:first-child {
+    width: 27px !important;
+    height: 27px !important;
+    font-size: 14px !important;
+  }
+
+  .quest-sidebar::after {
+    display: none !important;
+  }
+}
+
+/* 낮은 노트북·태블릿 가로 화면에서 홈 카드 추가 압축 */
+@media (min-width: 1024px) and (max-height: 900px) {
+  .quest-content-home .quest-home-card,
+  .quest-content-home .quest-grade-home-card {
+    padding: 11px 13px !important;
+    border-radius: 22px !important;
+  }
+
+  .quest-content-home .quest-home-art,
+  .quest-content-home .quest-grade-home-art {
+    width: 68px !important;
+    height: 68px !important;
+    min-width: 68px !important;
+    min-height: 68px !important;
+    border-radius: 18px !important;
+    font-size: 34px !important;
+    transform: none !important;
+  }
+
+  .quest-content-home .quest-home-tag {
+    padding: 5px 9px !important;
+    font-size: 10px !important;
+  }
+
+  .quest-content-home .quest-home-card h3,
+  .quest-content-home .quest-grade-home-card h3 {
+    font-size: 18px !important;
+    line-height: 1.1 !important;
+  }
+
+  .quest-content-home .quest-home-card p,
+  .quest-content-home .quest-grade-home-card p {
+    display: -webkit-box !important;
+    margin-top: 5px !important;
+    overflow: hidden !important;
+    font-size: 11px !important;
+    line-height: 1.3 !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 2 !important;
+  }
+
+  .quest-content-home .quest-point-display {
+    min-height: 48px !important;
+    margin-top: 7px !important;
+    padding: 7px 10px !important;
+    font-size: 22px !important;
+  }
+
+  .quest-content-home .quest-note,
+  .quest-content-home .space-y-2 > div {
+    min-height: 0 !important;
+    padding: 6px 10px !important;
+    font-size: 11px !important;
+    line-height: 1.2 !important;
+  }
+
+  .quest-content-home .quest-button {
+    min-height: 38px !important;
+    height: 38px !important;
+    padding: 5px 10px !important;
+    font-size: 13px !important;
+  }
+}
+
+
+/* =========================================================
+   FINAL CORRECTIONS 2026-07-19
+   - 상단 헤더 완전 제거
+   - 사이드바 중복 테두리 제거
+   - 중2·중3 학습준비 보기 2열×2행
+   - 게임존 콘텐츠 잘림 및 내부 작은 스크롤 수정
+   ========================================================= */
+
+/* App.jsx에 Header가 없어야 하지만 이전 스타일 잔존까지 완전히 차단 */
+.quest-header,
+.quest-header-compact {
+  display: none !important;
+}
+
+/* 사이드바 안쪽에 겹쳐 보이는 장식 테두리 제거 */
+.quest-sidebar::before,
+.quest-sidebar::after {
+  display: none !important;
+  content: none !important;
+}
+
+.quest-profile-card {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+/* 중2·중3 학습준비 보기 4개: 2열 × 2행 */
+.grade-ready-choice-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  grid-template-rows: repeat(2, minmax(42px, auto)) !important;
+  gap: 8px !important;
+  width: 100% !important;
+  min-height: 92px !important;
+  margin-top: 10px !important;
+}
+
+.grade-ready-choice-button {
+  display: flex !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 42px !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  margin: 0 !important;
+  padding: 7px 12px !important;
+  border-radius: 14px !important;
+  font-size: 13px !important;
+  line-height: 1.2 !important;
+  text-align: left !important;
+  overflow-wrap: anywhere !important;
+}
+
+.grade-ready-choice-button.selected {
+  color: #fff !important;
+  border-color: #f5c451 !important;
+  background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%) !important;
+  box-shadow: 0 4px 0 #173f96 !important;
+}
+
+/* 게임 탭은 오른쪽 본문 영역에서 자연스럽게 스크롤 */
+.quest-content-scroll:has(.quest-game-zone),
+.quest-content-scroll:has(.quest-game-stage) {
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+}
+
+.quest-game-zone {
+  width: 100% !important;
+  height: auto !important;
+  min-height: 100% !important;
+  overflow: visible !important;
+}
+
+.quest-game-select-grid {
+  width: 100% !important;
+  height: auto !important;
+  min-height: 560px !important;
+  overflow: visible !important;
+}
+
+.quest-game-select-card {
+  min-height: 250px !important;
+  overflow: visible !important;
+}
+
+.quest-game-stage {
+  width: 100% !important;
+  height: auto !important;
+  min-height: 100% !important;
+  overflow: visible !important;
+}
+
+.quest-game-embed {
+  width: 100% !important;
+  height: auto !important;
+  min-height: 720px !important;
+  overflow: visible !important;
+}
+
+.quest-game-embed > * {
+  width: 100% !important;
+  min-height: 720px !important;
+}
+
+.quest-game-embed iframe {
+  display: block !important;
+  width: 100% !important;
+  height: 760px !important;
+  min-height: 760px !important;
+  border: 0 !important;
+  overflow: hidden !important;
+}
+
+@media (min-width: 1024px) and (max-height: 900px) {
+  .grade-ready-choice-grid {
+    grid-template-rows: repeat(2, 38px) !important;
+    gap: 6px !important;
+    min-height: 82px !important;
+    margin-top: 6px !important;
+  }
+
+  .grade-ready-choice-button {
+    min-height: 38px !important;
+    padding: 5px 10px !important;
+    font-size: 12px !important;
+    line-height: 1.15 !important;
+  }
+
+  .quest-game-select-grid {
+    min-height: 620px !important;
+  }
+
+  .quest-game-embed,
+  .quest-game-embed > * {
+    min-height: 760px !important;
+  }
+
+  .quest-game-embed iframe {
+    height: 800px !important;
+    min-height: 800px !important;
+  }
+}
+
+
+/* =========================================================
+   FINAL PATCH: 진단 결과, 중1 개념 버튼, 중2·중3 게임 화면
+   ========================================================= */
+
+/* 1) 진단 결과를 눌러도 카드가 두꺼워져 화면이 잘리지 않도록 압축 */
+.quest-ready-screen.is-submitted,
+.grade-ready-screen.is-submitted {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  scrollbar-width: thin;
+}
+
+.quest-ready-screen.is-submitted .quest-diagnosis-card,
+.grade-ready-screen.is-submitted > .grid > div:first-child > div {
+  padding: 12px !important;
+}
+
+.quest-ready-screen.is-submitted .quest-diagnosis-card h3,
+.grade-ready-screen.is-submitted > .grid > div:first-child h3 {
+  min-height: 42px !important;
+  font-size: 14px !important;
+  line-height: 1.3 !important;
+}
+
+.quest-ready-screen.is-submitted .ready-feedback,
+.grade-ready-screen.is-submitted .ready-feedback {
+  margin-top: 6px !important;
+  padding: 6px 10px !important;
+  border-radius: 12px !important;
+  font-size: 11px !important;
+  line-height: 1.25 !important;
+}
+
+.quest-ready-screen.is-submitted .quest-choice-grid,
+.grade-ready-screen.is-submitted .grade-ready-choice-grid {
+  margin-top: 6px !important;
+  gap: 6px !important;
+}
+
+.quest-ready-screen.is-submitted .quest-choice-button,
+.grade-ready-screen.is-submitted .grade-ready-choice-button {
+  min-height: 36px !important;
+  height: 36px !important;
+  padding: 5px 9px !important;
+  font-size: 12px !important;
+}
+
+.quest-ready-screen.is-submitted .quest-advice-panel > div,
+.grade-ready-screen.is-submitted > .grid > div:last-child > div {
+  padding: 12px !important;
+}
+
+.quest-ready-screen.is-submitted .quest-advice-panel button,
+.grade-ready-screen.is-submitted > .grid > div:last-child button {
+  padding-top: 9px !important;
+  padding-bottom: 9px !important;
+  font-size: 13px !important;
+}
+
+/* 2) 중1 개념학습 첫 화면: 그림 없이 네 용어 버튼만 표시 */
+.concept-simple-screen {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  background: linear-gradient(180deg, #fff8e7 0%, #f5e4bd 100%) !important;
+}
+
+.concept-simple-header {
+  flex: 0 0 auto !important;
+  margin-bottom: 12px !important;
+}
+
+.concept-simple-grid {
+  display: grid !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  grid-template-rows: repeat(2, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+}
+
+.concept-simple-button {
+  display: flex !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 20px 28px !important;
+  border: 2px solid #d79d2f !important;
+  border-radius: 24px !important;
+  color: #071f52 !important;
+  font-size: clamp(24px, 2.2vw, 36px) !important;
+  font-weight: 950 !important;
+  text-align: left !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.65), 0 10px 20px rgba(80,52,10,.12) !important;
+}
+
+.concept-simple-button svg {
+  flex: 0 0 auto !important;
+  color: #2563eb !important;
+}
+
+.concept-simple-orderedPair { background: linear-gradient(180deg, #fff8e7, #f4ddb2) !important; }
+.concept-simple-plane { background: linear-gradient(180deg, #f4fbff, #ddecff) !important; }
+.concept-simple-direct { background: linear-gradient(180deg, #f2fff5, #d7f3c6) !important; }
+.concept-simple-inverse { background: linear-gradient(180deg, #fbf4ff, #ead8ff) !important; }
+
+/* 3) 중2·중3 게임: h-full 높이 붕괴 방지 */
+.grade-game-shell {
+  width: 100% !important;
+  height: calc(100dvh - 12px) !important;
+  min-height: 700px !important;
+  overflow: hidden !important;
+}
+
+.grade-game-iframe-shell {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.grade-game-iframe {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 640px !important;
+  border: 0 !important;
+}
+
+.quest-content-scroll:has(.grade-game-shell) {
+  overflow: hidden !important;
+}
+
+@media (max-height: 900px) and (min-width: 1024px) {
+  .concept-simple-screen {
+    padding: 14px !important;
+  }
+
+  .concept-simple-header {
+    margin-bottom: 8px !important;
+  }
+
+  .concept-simple-header h2 {
+    font-size: 24px !important;
+  }
+
+  .concept-simple-header p {
+    font-size: 12px !important;
+  }
+
+  .concept-simple-grid {
+    gap: 9px !important;
+  }
+
+  .concept-simple-button {
+    padding: 14px 20px !important;
+    border-radius: 18px !important;
+    font-size: 23px !important;
+  }
+
+  .grade-game-shell {
+    height: calc(100dvh - 12px) !important;
+    min-height: 0 !important;
+  }
+
+  .grade-game-iframe {
+    min-height: 0 !important;
+  }
+}
+
+/* =========================================================
+   FINAL FIX: 진단 결과 후 보기 간격 고정 + 중2 게임 전체 높이
+   ========================================================= */
+
+/* 중1·중2·중3 학습준비 보기 4개는 항상 2열 × 2행 고정 */
+.quest-choice-grid,
+.grade-ready-choice-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  grid-template-rows: repeat(2, 42px) !important;
+  align-content: start !important;
+  flex: 0 0 auto !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 92px !important;
+  margin-top: 8px !important;
+  gap: 8px !important;
+}
+
+.quest-choice-grid > button,
+.grade-ready-choice-grid > button,
+.quest-choice-button,
+.grade-ready-choice-button {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  max-height: 42px !important;
+  margin: 0 !important;
+  padding: 7px 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  line-height: 1.15 !important;
+}
+
+/* 결과 설명이 나타나도 보기 영역이 늘어나지 않도록 처리 */
+.quest-answer-feedback,
+.grade-ready-feedback,
+.ready-feedback {
+  flex: 0 0 auto !important;
+  min-height: 0 !important;
+  margin-top: 8px !important;
+  padding: 7px 10px !important;
+  line-height: 1.25 !important;
+}
+
+.quest-diagnosis-card,
+.grade-ready-screen .rounded-\[1\.7rem\] {
+  align-content: start !important;
+}
+
+/* 결과 확인 후 학습준비 화면은 본문 영역에서만 스크롤 */
+.quest-ready-screen.is-submitted,
+.grade-ready-screen.is-submitted {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  scrollbar-width: thin;
+}
+
+/* 중2 일차함수 레이저 슈터: 부모 높이 붕괴 방지 */
+.quest-game-stage-linear {
+  display: flex !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 760px !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  padding: 8px !important;
+  overflow: visible !important;
+  border: 2px solid #d69f36 !important;
+  border-radius: 28px !important;
+  background: linear-gradient(180deg, #fff8e8 0%, #f2dfad 100%) !important;
+}
+
+.quest-game-stage-header {
+  display: flex !important;
+  width: 100% !important;
+  min-height: 46px !important;
+  flex: 0 0 46px !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  padding: 0 14px !important;
+  border-radius: 20px !important;
+  background: linear-gradient(180deg, #0f3f85 0%, #08245c 100%) !important;
+  color: #fffbe9 !important;
+}
+
+.quest-linear-game-frame,
+.linear-laser-game {
+  display: block !important;
+  width: 100% !important;
+  height: 690px !important;
+  min-height: 690px !important;
+  flex: 0 0 690px !important;
+  overflow: hidden !important;
+  border-radius: 24px !important;
+  background: #ffffff !important;
+}
+
+.linear-laser-iframe {
+  display: block !important;
+  width: 100% !important;
+  height: 690px !important;
+  min-height: 690px !important;
+  border: 0 !important;
+  background: #ffffff !important;
+}
+
+/* 게임 화면 전체는 오른쪽 본문에서 자연스럽게 스크롤 */
+.quest-content-scroll:has(.quest-game-stage-linear),
+.quest-content:has(.quest-game-stage-linear) {
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  scrollbar-width: thin;
+}
+
+@media (min-width: 1024px) and (max-height: 900px) {
+  .quest-choice-grid,
+  .grade-ready-choice-grid {
+    grid-template-rows: repeat(2, 38px) !important;
+    min-height: 82px !important;
+    gap: 6px !important;
+    margin-top: 6px !important;
+  }
+
+  .quest-choice-grid > button,
+  .grade-ready-choice-grid > button,
+  .quest-choice-button,
+  .grade-ready-choice-button {
+    height: 38px !important;
+    min-height: 38px !important;
+    max-height: 38px !important;
+    padding: 5px 10px !important;
+    font-size: 12px !important;
+  }
+
+  .quest-game-stage-linear {
+    min-height: 720px !important;
+  }
+
+  .quest-linear-game-frame,
+  .linear-laser-game,
+  .linear-laser-iframe {
+    height: 650px !important;
+    min-height: 650px !important;
+  }
+
+  .quest-linear-game-frame,
+  .linear-laser-game {
+    flex-basis: 650px !important;
+  }
+}
+
+
+/* =========================================================
+   FINAL GAME VIEWPORT FIX
+   중2·중3 게임을 오른쪽 본문 높이에 정확히 맞춤
+   ========================================================= */
+.quest-content:has(.grade-game-shell),
+.quest-content-scroll:has(.grade-game-shell) {
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.grade-game-shell,
+.quest-game-stage-linear,
+.quest-game-stage-parabola {
+  display: flex !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  padding: 8px !important;
+  overflow: hidden !important;
+  border: 2px solid #d69f36 !important;
+  border-radius: 28px !important;
+  background: linear-gradient(180deg, #fff8e8 0%, #f2dfad 100%) !important;
+}
+
+.quest-game-stage-header {
+  display: flex !important;
+  width: 100% !important;
+  min-height: 46px !important;
+  height: 46px !important;
+  flex: 0 0 46px !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  padding: 0 14px !important;
+  border-radius: 20px !important;
+  background: linear-gradient(180deg, #0f3f85 0%, #08245c 100%) !important;
+  color: #fffbe9 !important;
+}
+
+.quest-game-stage-header-purple {
+  background: linear-gradient(180deg, #4c1d95 0%, #2e1065 100%) !important;
+}
+
+.quest-linear-game-frame,
+.grade-game-content-frame,
+.linear-laser-game {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  flex: 1 1 auto !important;
+  overflow: hidden !important;
+  border-radius: 24px !important;
+  background: #ffffff !important;
+}
+
+.linear-laser-iframe {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  border: 0 !important;
+  background: #ffffff !important;
+}
+
+.grade-game-content-frame > div,
+.grade-game-content-frame > div > div {
+  min-height: 0 !important;
+}
+
+/* 중3 포물선 게임: 화면 안에서 그래프와 조절 패널이 모두 보이도록 */
+.grade-game-content-frame > div {
+  height: 100% !important;
+  overflow: hidden !important;
+}
+
+.grade-game-content-frame svg {
+  max-height: 100% !important;
+}
+
+@media (max-width: 1180px) {
+  .grade-game-content-frame > div {
+    grid-template-columns: 1fr !important;
+    overflow-y: auto !important;
+  }
+}
+
+
+/* =========================================================
+   FINAL PARABOLA GAME FIT FIX
+   중3 포물선 게임을 브라우저 100% 화면에 맞게 축소
+   ========================================================= */
+@media (min-width: 1181px) {
+  .parabola-master-game {
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    grid-template-columns: minmax(0, 1.28fr) minmax(360px, 0.92fr) !important;
+  }
+
+  .parabola-graph-panel,
+  .parabola-control-panel {
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .parabola-svg-wrap {
+    min-height: 0 !important;
+    overflow: hidden !important;
+    padding: 4px !important;
+  }
+
+  .parabola-master-svg {
+    display: block !important;
+    width: auto !important;
+    height: min(100%, calc(100dvh - 300px)) !important;
+    max-height: calc(100dvh - 300px) !important;
+    aspect-ratio: 1 / 1 !important;
+  }
+
+  .parabola-graph-panel > div:first-child {
+    margin-bottom: 4px !important;
+  }
+
+  .parabola-graph-panel > div:last-child {
+    margin-top: 4px !important;
+    padding: 5px 8px !important;
+    font-size: 10px !important;
+  }
+
+  .parabola-control-panel {
+    gap: 6px !important;
+    padding: 9px !important;
+  }
+
+  .parabola-control-panel > div {
+    flex-shrink: 0 !important;
+  }
+
+  .parabola-control-panel > div:nth-child(3) {
+    min-height: 0 !important;
+    flex: 1 1 auto !important;
+    overflow-y: auto !important;
+  }
+}
+
+@media (min-width: 1181px) and (max-height: 820px) {
+  .parabola-master-svg {
+    height: min(100%, calc(100dvh - 265px)) !important;
+    max-height: calc(100dvh - 265px) !important;
+  }
+
+  .parabola-graph-panel {
+    padding: 8px !important;
+  }
+
+  .parabola-graph-panel h3,
+  .parabola-control-panel h3 {
+    font-size: 15px !important;
+  }
+
+  .parabola-graph-panel p,
+  .parabola-control-panel p {
+    font-size: 10px !important;
+  }
+}
+
+/* =========================================================
+   FINAL PARABOLA LAYOUT FIX
+   - 포물선 좌표평면을 위쪽에 균형 있게 배치
+   - 오른쪽 발사 버튼을 항상 화면 안에 표시
+   ========================================================= */
+@media (min-width: 1181px) {
+  .parabola-master-game {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1.25fr) minmax(390px, 0.95fr) !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    gap: 10px !important;
+    padding: 8px !important;
+    overflow: hidden !important;
+  }
+
+  .parabola-graph-panel {
+    display: grid !important;
+    grid-template-rows: auto minmax(0, 1fr) auto !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    padding: 10px !important;
+    overflow: hidden !important;
+  }
+
+  .parabola-svg-wrap {
+    display: flex !important;
+    min-height: 0 !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+    padding: 6px !important;
+    overflow: hidden !important;
+  }
+
+  .parabola-master-svg {
+    display: block !important;
+    width: min(100%, 560px) !important;
+    height: auto !important;
+    max-width: 100% !important;
+    max-height: calc(100dvh - 300px) !important;
+    aspect-ratio: 1 / 1 !important;
+  }
+
+  .parabola-control-panel {
+    display: grid !important;
+    grid-template-rows: auto auto auto auto auto !important;
+    align-content: start !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    gap: 7px !important;
+    padding: 10px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    scrollbar-width: thin;
+  }
+
+  .parabola-control-panel > div:nth-child(3) {
+    display: grid !important;
+    grid-template-rows: repeat(3, auto) !important;
+    flex: 0 0 auto !important;
+    min-height: 0 !important;
+    padding: 8px !important;
+    gap: 6px !important;
+    overflow: visible !important;
+  }
+
+  .parabola-control-panel > div:nth-child(3) > div {
+    padding: 7px 9px !important;
+  }
+
+  .parabola-control-panel > div:nth-child(4) {
+    margin: 0 !important;
+    padding: 7px 10px !important;
+    font-size: 11px !important;
+    line-height: 1.25 !important;
+  }
+
+  .parabola-control-panel > div:nth-child(5) {
+    position: sticky !important;
+    bottom: 0 !important;
+    z-index: 30 !important;
+    margin-top: 0 !important;
+    padding: 6px 0 2px !important;
+    background: #ffffff !important;
+  }
+
+  .parabola-control-panel > div:nth-child(5) button {
+    min-height: 42px !important;
+    padding: 8px 10px !important;
+  }
+}
+
+@media (min-width: 1181px) and (max-height: 820px) {
+  .parabola-master-svg {
+    width: min(100%, 500px) !important;
+    max-height: calc(100dvh - 285px) !important;
+  }
+
+  .parabola-control-panel {
+    gap: 5px !important;
+    padding: 8px !important;
+  }
+
+  .parabola-control-panel > div:first-child,
+  .parabola-control-panel > div:nth-child(2) {
+    padding: 8px 10px !important;
+  }
+
+  .parabola-control-panel > div:nth-child(3) > div {
+    padding: 5px 8px !important;
+  }
+}
+
+/* =========================================================
+   VERSION 001 - 중2 레이저 게임 최종 높이 고정
+   ========================================================= */
+
+/* 게임 탭일 때 오른쪽 본문은 브라우저 사용 가능 높이를 정확히 사용 */
+.quest-main-shell:has(.quest-game-stage-linear),
+.quest-content:has(.quest-game-stage-linear),
+.quest-content-scroll:has(.quest-game-stage-linear) {
+  height: calc(100dvh - 24px) !important;
+  min-height: 0 !important;
+  max-height: calc(100dvh - 24px) !important;
+  overflow: hidden !important;
+}
+
+.quest-game-stage-linear.grade-game-shell {
+  display: grid !important;
+  grid-template-rows: 46px minmax(0, 1fr) !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  gap: 8px !important;
+  padding: 8px !important;
+  overflow: hidden !important;
+  border: 2px solid #d69f36 !important;
+  border-radius: 28px !important;
+  background: linear-gradient(180deg, #fff8e8 0%, #f2dfad 100%) !important;
+}
+
+.quest-game-stage-linear .quest-game-stage-header {
+  width: 100% !important;
+  height: 46px !important;
+  min-height: 46px !important;
+  max-height: 46px !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+}
+
+.quest-game-stage-linear .quest-linear-game-frame {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
+  border-radius: 24px !important;
+  background: #f0f4f8 !important;
+}
+
+.quest-game-stage-linear .linear-laser-game {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
+  border-radius: 24px !important;
+  background: #f0f4f8 !important;
+}
+
+.quest-game-stage-linear .linear-laser-iframe {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  max-height: 100% !important;
+  margin: 0 !important;
+  border: 0 !important;
+  background: #f0f4f8 !important;
+}
+
+/* 낮은 노트북·태블릿에서도 같은 높이 계산 유지 */
+@media (min-width: 1024px) and (max-height: 900px) {
+  .quest-main-shell:has(.quest-game-stage-linear),
+  .quest-content:has(.quest-game-stage-linear),
+  .quest-content-scroll:has(.quest-game-stage-linear) {
+    height: calc(100dvh - 16px) !important;
+    max-height: calc(100dvh - 16px) !important;
+  }
+}
+
+
+/* =========================================================
+   003: AI 해석 왼쪽 배치 + 로그인 학습 가이드 팝업
+   ========================================================= */
+.quest-ai-workspace {
+  height: 100%;
+}
+
+.quest-ai-controls {
+  scrollbar-width: thin;
+  overscroll-behavior: contain;
+}
+
+.quest-analysis-card-left {
+  flex: 0 0 auto;
+}
+
+.quest-ai-workspace > .min-h-0,
+.quest-ai-workspace .quest-graph-canvas {
+  height: 100% !important;
+  min-height: 0 !important;
+}
+
+.learning-guide-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(2, 10, 28, 0.72);
+  backdrop-filter: blur(8px);
+}
+
+.learning-guide-modal {
+  position: relative;
+  width: min(860px, 100%);
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  border: 2px solid rgba(245, 190, 67, 0.9);
+  border-radius: 30px;
+  padding: 28px;
+  background: linear-gradient(180deg, #fffdf5 0%, #f7ead0 100%);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.35);
+}
+
+.learning-guide-close {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 1px solid #d7a43a;
+  border-radius: 999px;
+  background: #fff;
+  color: #17356c;
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.learning-guide-heading {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding-right: 44px;
+}
+
+.learning-guide-compass {
+  display: grid;
+  width: 78px;
+  height: 78px;
+  flex: 0 0 78px;
+  place-items: center;
+  border: 4px solid #f3c85a;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #173f86, #071a43);
+  font-size: 38px;
+  box-shadow: 0 8px 18px rgba(13, 42, 94, 0.22);
+}
+
+.learning-guide-kicker {
+  color: #9a6408;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.learning-guide-heading h2 {
+  margin-top: 3px;
+  color: #09265c;
+  font-size: 28px;
+  font-weight: 1000;
+  line-height: 1.15;
+}
+
+.learning-guide-heading p {
+  margin-top: 6px;
+  color: #55627a;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.learning-guide-steps {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.learning-guide-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  border: 1px solid #e8c978;
+  border-radius: 18px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.learning-guide-number {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  place-items: center;
+  border-radius: 12px;
+  background: #1f5bc4;
+  color: #fff;
+  font-weight: 1000;
+}
+
+.learning-guide-step h3 {
+  color: #0d2b63;
+  font-size: 15px;
+  font-weight: 1000;
+}
+
+.learning-guide-step p {
+  margin-top: 2px;
+  color: #5b6577;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.learning-guide-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.25fr;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.learning-guide-secondary,
+.learning-guide-primary {
+  min-height: 48px;
+  border-radius: 16px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 1000;
+}
+
+.learning-guide-secondary {
+  border: 1px solid #b8c8e5;
+  background: #fff;
+  color: #31517f;
+}
+
+.learning-guide-primary {
+  border: 1px solid #f1c14b;
+  background: linear-gradient(180deg, #2467d6, #174ba7);
+  color: #fff;
+  box-shadow: 0 5px 0 #0d347d;
+}
+
+@media (max-height: 820px) {
+  .learning-guide-modal {
+    padding: 20px;
+  }
+
+  .learning-guide-compass {
+    width: 62px;
+    height: 62px;
+    flex-basis: 62px;
+    font-size: 30px;
+  }
+
+  .learning-guide-heading h2 {
+    font-size: 23px;
+  }
+
+  .learning-guide-steps {
+    margin-top: 14px;
+    gap: 8px;
+  }
+
+  .learning-guide-step {
+    padding: 9px 11px;
+  }
+}
+
+@media (max-width: 760px) {
+  .learning-guide-steps,
+  .learning-guide-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================================================
+   GAME SCREEN VERTICAL SCROLL FIX
+   게임 콘텐츠가 화면 높이보다 길 때 하단이 잘리지 않도록
+   게임 영역 내부에서 세로 스크롤을 허용합니다.
+   ========================================================= */
+
+.quest-game-zone,
+.quest-game-stage,
+.quest-game-embed {
+  min-height: 0 !important;
+}
+
+.quest-game-zone {
+  height: 100% !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.quest-game-stage {
+  height: 100% !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
+  grid-template-rows: 46px minmax(0, 1fr) !important;
+}
+
+.quest-game-embed {
+  height: 100% !important;
+  max-height: 100% !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 2rem;
+}
+
+/* 게임 컴포넌트 내부의 h-full/overflow-hidden 때문에 스크롤이 막히는 현상 해제 */
+.quest-game-embed > * {
+  min-height: 100% !important;
+  height: auto !important;
+  overflow: visible !important;
+}
+
+/* 게임 선택 카드도 작은 화면에서는 자연스럽게 아래로 이어지도록 */
+@media (max-height: 900px) {
+  .quest-game-zone .quest-game-select-grid {
+    grid-template-rows: none !important;
+    min-height: auto !important;
+  }
+
+  .quest-game-zone .quest-game-select-card {
+    min-height: 240px;
+  }
+}
+
+/* 태블릿 가로 및 노트북 100% 배율 */
+@media (min-width: 768px) and (max-height: 950px) {
+  .quest-game-stage {
+    border-radius: 1.25rem !important;
+    padding: 0.4rem !important;
+    gap: 0.35rem !important;
+  }
+
+  .quest-game-embed {
+    padding-bottom: 3rem !important;
+  }
+}

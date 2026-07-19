@@ -991,7 +991,8 @@ export default function App() {
   const [active, setActive] = useState("home");
   const [authUser, setAuthUser] = useState(null);
   const [guestMode, setGuestMode] = useState(false);
-  const [language, setLanguage] = useState(() => localStorage.getItem("functionExplorerLanguage") || "ko");
+  const [showLearningGuide, setShowLearningGuide] = useState(true);
+  const language = "ko";
   const [authLoading, setAuthLoading] = useState(isFirebaseConfigured);
   const [studentProfile, setStudentProfile] = useState(() => {
     try {
@@ -1020,22 +1021,6 @@ export default function App() {
   });
   const activeTitle = useMemo(() => getUiText(language, navItems.find((item) => item.id === active)?.labelKey || active), [active, language]);
 
-  useEffect(() => {
-    localStorage.setItem("functionExplorerLanguage", language);
-  }, [language]);
-
-  useEffect(() => {
-    const run = () => applyManualTranslation(language);
-    const frame = requestAnimationFrame(run);
-    const observer = new MutationObserver(() => requestAnimationFrame(run));
-    if (typeof document !== "undefined" && document.body) {
-      observer.observe(document.body, { childList: true, subtree: true, characterData: true });
-    }
-    return () => {
-      cancelAnimationFrame(frame);
-      observer.disconnect();
-    };
-  }, [language, active, grade]);
   const saveGraphReflection = (scope, text) => {
     const key = `${grade}:${scope}`;
     const trimmed = String(text || "").trim();
@@ -1184,6 +1169,7 @@ export default function App() {
 
   const handleLoginSuccess = (profile) => {
     setGuestMode(false);
+    setShowLearningGuide(true);
     const cleanProfile = { ...(profile || {}) };
     const shouldResetProgress = !!cleanProfile.__resetProgress;
     delete cleanProfile.__resetProgress;
@@ -1207,6 +1193,7 @@ export default function App() {
 
   const handleGuestLogin = () => {
     setGuestMode(true);
+    setShowLearningGuide(true);
     setAuthUser(null);
     setStudentProfile({ name: "비회원 체험", role: "guest" });
     setExpPoints(0);
@@ -1217,6 +1204,7 @@ export default function App() {
 
   const handleLogout = async () => {
     if (auth && authUser) await signOut(auth);
+    setShowLearningGuide(true);
     setGuestMode(false);
     setAuthUser(null);
     setStudentProfile({});
@@ -1247,22 +1235,135 @@ export default function App() {
   return (
     <div className="quest-bg min-h-screen text-slate-800">
       <div className="mx-auto flex min-h-screen max-w-[1500px] gap-4 p-3">
-        <Sidebar active={active} setActive={setActive} studentName={studentName} language={language} isAdmin={studentProfile.role === "admin"} />
-        <main className="flex min-h-screen min-w-0 flex-1 flex-col gap-3">
-          <Header activeTitle={activeTitle} setActive={setActive} expPoints={expPoints} grade={grade} setGrade={setGrade} studentName={studentName} onLogout={handleLogout} isGuest={guestMode} language={language} />
-          <motion.section className="min-h-0 flex-1 overflow-y-auto" key={active} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
-            {active === "home" && (grade === "middle1" ? <HomeScreen setActive={setActive} expPoints={expPoints} isMissionComplete={isMissionComplete} /> : <GradeExtensionHome grade={grade} setActive={setActive} expPoints={expPoints} isMissionComplete={isMissionComplete} />)}
-            {active === "ai" && <FunctionGraphAssistant />}
+        <Sidebar
+          active={active}
+          setActive={setActive}
+          studentName={studentName}
+          language={language}
+          isAdmin={studentProfile.role === "admin"}
+          grade={grade}
+          setGrade={setGrade}
+          expPoints={expPoints}
+          onLogout={handleLogout}
+          isGuest={guestMode}
+          onOpenLearningGuide={() => setShowLearningGuide(true)}
+        />
+        <main className="quest-main-shell flex min-h-0 min-w-0 flex-1 flex-col">
+          <motion.section
+            className={`quest-content min-h-0 flex-1 ${
+              active === "home"
+                ? "quest-content-home"
+                : active === "ready"
+                  ? "quest-content-ready"
+                  : active === "concept" && grade === "middle1" && !selectedConcept
+                    ? "quest-content-concept-list"
+                    : "quest-content-scroll"
+            }`}
+            key={active}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25 }}
+          >
+            {active === "home" && (grade === "middle1" ? <HomeScreen setActive={setActive} expPoints={expPoints} isMissionComplete={isMissionComplete} onOpenLearningGuide={() => setShowLearningGuide(true)} /> : <GradeExtensionHome grade={grade} setActive={setActive} expPoints={expPoints} isMissionComplete={isMissionComplete} onOpenLearningGuide={() => setShowLearningGuide(true)} />)}
+            {active === "ai" && <FunctionGraphAssistant grade={grade} />}
             {active === "ready" && (grade === "middle1" ? <ReadyScreen setActive={setActive} completeMission={completeMission} isMissionComplete={isMissionComplete} /> : <GradeExtensionReady grade={grade} setActive={setActive} completeMission={completeMission} isMissionComplete={isMissionComplete} />)}
             {active === "concept" && (grade === "middle1" ? <ConceptScreen selectedConcept={selectedConcept} setSelectedConcept={setSelectedConcept} completeMission={completeMission} isMissionComplete={isMissionComplete} /> : <GradeExtensionConcept grade={grade} completeMission={completeMission} isMissionComplete={isMissionComplete} />)}
             {active === "explore" && (grade === "middle1" ? <ExploreScreen x={x} y={y} setX={setX} setY={setY} points={points} addPoint={addPoint} resetPoints={resetPoints} awardPoints={awardPoints} completeMission={completeMission} isMissionComplete={isMissionComplete} reflection={graphReflections[`${grade}:explore`]} onSaveReflection={(text) => saveGraphReflection("explore", text)} /> : <GradeExtensionExplore grade={grade} awardPoints={awardPoints} completeMission={completeMission} isMissionComplete={isMissionComplete} reflection={graphReflections[`${grade}:explore`]} onSaveReflection={(text) => saveGraphReflection("explore", text)} />)}
             {active === "game" && (grade === "middle1" ? <GameScreen awardPoints={awardPoints} expPoints={expPoints} /> : <GradeExtensionGame grade={grade} awardPoints={awardPoints} expPoints={expPoints} />)}
             {active === "assessment" && (grade === "middle1" ? <AssessmentScreen answers={assessmentAnswers} setAnswers={setAssessmentAnswers} completeMission={completeMission} isMissionComplete={isMissionComplete} /> : <GradeExtensionAssessment grade={grade} answers={gradeAssessmentAnswers[grade] || {}} setAnswers={(next) => setGradeAssessmentAnswers((prev) => ({ ...prev, [grade]: typeof next === "function" ? next(prev[grade] || {}) : next }))} completeMission={completeMission} isMissionComplete={isMissionComplete} />)}
             {active === "growth" && (grade === "middle1" ? <GrowthScreen setActive={setActive} answers={assessmentAnswers} reflections={graphReflections} /> : <GradeExtensionGrowth grade={grade} setActive={setActive} answers={gradeAssessmentAnswers[grade] || {}} reflections={graphReflections} />)}
-            {active === "settings" && <SettingsScreen language={language} setLanguage={setLanguage} />}
             {active === "admin" && studentProfile.role === "admin" && <AdminScreen />}
           </motion.section>
         </main>
+      </div>
+
+      {showLearningGuide && (
+        <LearningGuideModal
+          grade={grade}
+          studentName={studentName}
+          onClose={() => setShowLearningGuide(false)}
+          onStart={() => {
+            setShowLearningGuide(false);
+            setActive("ready");
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function LearningGuideModal({ grade = "middle1", studentName = "학생", onClose, onStart }) {
+  const guideData = {
+    middle1: {
+      label: "중1",
+      title: "좌표와 정비례·반비례 탐험",
+      steps: [
+        ["1", "학습준비", "짧은 진단으로 출발점을 확인해요."],
+        ["2", "개념학습", "순서쌍·좌표평면·정비례·반비례를 익혀요."],
+        ["3", "탐구활동", "표의 값을 좌표로 옮기고 그래프를 완성해요."],
+        ["4", "AI 그래프 해석", "궁금한 함수식을 입력하고 특징을 확인해요."],
+        ["5", "게임존", "미니게임으로 개념을 재미있게 연습해요."],
+        ["6", "형성평가", "배운 내용을 확인하고 성장기록을 살펴봐요."],
+      ],
+    },
+    middle2: {
+      label: "중2",
+      title: "일차함수 그래프 탐험",
+      steps: [
+        ["1", "학습준비", "함수·기울기·y절편의 준비 상태를 확인해요."],
+        ["2", "개념학습", "일차함수의 뜻과 그래프 성질을 익혀요."],
+        ["3", "탐구활동", "기울기와 y절편을 바꾸며 그래프 변화를 관찰해요."],
+        ["4", "AI 그래프 해석", "일차함수식을 입력하고 그래프 특징을 확인해요."],
+        ["5", "게임존", "레이저 게임으로 식과 그래프를 연결해요."],
+        ["6", "형성평가", "이해 정도를 점검하고 다음 학습을 확인해요."],
+      ],
+    },
+    middle3: {
+      label: "중3",
+      title: "이차함수와 포물선 탐험",
+      steps: [
+        ["1", "학습준비", "포물선·꼭짓점·축의 기초를 확인해요."],
+        ["2", "개념학습", "이차함수 그래프의 핵심 성질을 익혀요."],
+        ["3", "탐구활동", "a, p, q를 바꾸며 그래프 변화를 관찰해요."],
+        ["4", "AI 그래프 해석", "이차함수식을 입력하고 꼭짓점과 축을 확인해요."],
+        ["5", "게임존", "포물선 미션으로 그래프를 직접 조절해요."],
+        ["6", "형성평가", "배운 내용을 점검하고 성장기록을 확인해요."],
+      ],
+    },
+  };
+
+  const guide = guideData[grade] || guideData.middle1;
+
+  return (
+    <div className="learning-guide-overlay" role="dialog" aria-modal="true" aria-labelledby="learning-guide-title">
+      <div className="learning-guide-modal">
+        <button type="button" onClick={onClose} className="learning-guide-close" aria-label="학습 가이드 닫기">×</button>
+
+        <div className="learning-guide-heading">
+          <div className="learning-guide-compass">🧭</div>
+          <div>
+            <div className="learning-guide-kicker">{guide.label} 추천 학습 경로</div>
+            <h2 id="learning-guide-title">{studentName}님의 학습 가이드</h2>
+            <p>{guide.title}은 아래 순서로 학습하면 효과적입니다.</p>
+          </div>
+        </div>
+
+        <div className="learning-guide-steps">
+          {guide.steps.map(([number, title, description]) => (
+            <div key={number} className="learning-guide-step">
+              <div className="learning-guide-number">{number}</div>
+              <div>
+                <h3>{title}</h3>
+                <p>{description}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="learning-guide-actions">
+          <button type="button" onClick={onClose} className="learning-guide-secondary">홈부터 둘러보기</button>
+          <button type="button" onClick={onStart} className="learning-guide-primary">학습준비부터 시작하기 →</button>
+        </div>
       </div>
     </div>
   );
@@ -1622,8 +1723,21 @@ function AuthScreen({ onLoginSuccess, onGuestLogin }) {
   );
 }
 
-function Sidebar({ active, setActive, studentName = "학생 이름", language = "ko", isAdmin = false }) {
+function Sidebar({
+  active,
+  setActive,
+  studentName = "학생 이름",
+  language = "ko",
+  isAdmin = false,
+  grade = "middle1",
+  setGrade,
+  expPoints = 0,
+  onLogout,
+  isGuest = false,
+  onOpenLearningGuide,
+}) {
   const visibleNavItems = isAdmin ? [...navItems, adminNavItem] : navItems;
+  const gradeLabels = { middle1: "중1", middle2: "중2", middle3: "중3" };
 
   const questIcons = {
     home: "🏠",
@@ -1638,20 +1752,63 @@ function Sidebar({ active, setActive, studentName = "학생 이름", language = 
   };
 
   return (
-    <aside className="quest-sidebar hidden w-56 shrink-0 rounded-[2rem] p-4 lg:block">
+    <aside className="quest-sidebar hidden w-56 shrink-0 rounded-[2rem] p-4 lg:flex lg:flex-col">
       <button
         onClick={() => setActive("home")}
-        className="mb-6 flex w-full flex-col items-center justify-center rounded-[1.7rem] border border-amber-300/40 bg-slate-950/20 px-3 py-4 text-center transition hover:bg-slate-950/30"
+        className="quest-profile-card flex w-full shrink-0 flex-col items-center justify-center rounded-[1.7rem] border border-amber-300/40 bg-slate-950/20 px-3 py-3 text-center transition hover:bg-slate-950/30"
       >
-        <div className="relative flex h-20 w-20 items-center justify-center rounded-full border-4 border-amber-300 bg-gradient-to-br from-blue-900 to-slate-950 text-4xl shadow-lg">
+        <div className="relative flex h-16 w-16 items-center justify-center rounded-full border-4 border-amber-300 bg-gradient-to-br from-blue-900 to-slate-950 text-3xl shadow-lg">
           🧭
         </div>
-        <div className="mt-3 rounded-xl border border-amber-300/60 bg-blue-950/80 px-5 py-2 text-base font-black text-amber-100">
+        <div className="mt-2 max-w-full truncate rounded-xl border border-amber-300/60 bg-blue-950/80 px-4 py-1.5 text-sm font-black text-amber-100">
           {studentName}
         </div>
       </button>
 
-      <nav className="space-y-2">
+      <div className="quest-sidebar-status mt-2 grid grid-cols-[1fr_auto] gap-2">
+        <div className="rounded-xl border border-amber-300/30 bg-white/10 px-3 py-2 text-center text-xs font-black text-amber-100">
+          {isGuest ? "체험 모드" : `⭐ ${expPoints}P`}
+        </div>
+        <button
+          onClick={onLogout}
+          className="rounded-xl border border-rose-200/50 bg-white/90 px-3 py-2 text-xs font-black text-rose-600 hover:bg-rose-50"
+        >
+          {isGuest ? "종료" : "로그아웃"}
+        </button>
+      </div>
+
+      <div className="quest-grade-switcher mt-2 grid grid-cols-3 gap-1.5 rounded-2xl border border-amber-300/30 bg-slate-950/20 p-1.5">
+        {Object.entries(gradeLabels).map(([key, label]) => {
+          const selected = grade === key;
+          return (
+            <button
+              key={key}
+              onClick={() => {
+                setGrade(key);
+                setActive("home");
+              }}
+              className={`rounded-xl px-2 py-2 text-xs font-black transition ${
+                selected
+                  ? "border border-amber-300 bg-blue-600 text-white shadow"
+                  : "border border-transparent bg-white/10 text-amber-100 hover:bg-white/20"
+              }`}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
+
+      <button
+        type="button"
+        onClick={onOpenLearningGuide}
+        className="quest-nav-item mt-2 flex w-full items-center gap-3 rounded-2xl border border-amber-300/40 bg-amber-300/10 px-3 py-2 text-left text-sm font-black text-amber-100 transition hover:bg-amber-300/20"
+      >
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-white/10 text-base">🧭</span>
+        <span className="whitespace-nowrap">추천 학습 경로</span>
+      </button>
+
+      <nav className="quest-sidebar-nav mt-2 grid min-h-0 flex-1 content-start gap-1.5">
         {visibleNavItems.map((item) => {
           const Icon = item.icon;
           const isActive = active === item.id;
@@ -1660,42 +1817,21 @@ function Sidebar({ active, setActive, studentName = "학생 이름", language = 
             <button
               key={item.id}
               onClick={() => setActive(item.id)}
-              className={`quest-nav-item flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-black transition ${isActive ? "active" : ""}`}
+              className={`quest-nav-item flex w-full items-center gap-3 rounded-2xl px-3 py-2 text-left text-sm font-black transition ${isActive ? "active" : ""}`}
             >
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/10 text-lg">
-                {questIcons[item.id] || <Icon className="h-5 w-5" />}
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-white/10 text-base">
+                {questIcons[item.id] || <Icon className="h-4 w-4" />}
               </span>
               <span className="whitespace-nowrap">{getUiText(language, item.labelKey)}</span>
             </button>
           );
         })}
       </nav>
-
-      <div className="my-6 h-px bg-amber-200/30" />
-
-      <button
-        onClick={() => setActive("settings")}
-        className={`flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left font-black transition ${
-          active === "settings"
-            ? "border-amber-300 bg-blue-600 text-white shadow-lg"
-            : "border-amber-300/40 bg-[#f8e4b7] text-amber-950 hover:bg-[#fff0c7]"
-        }`}
-      >
-        <span className="text-xl">⚙️</span>
-        {getUiText(language, "settings")}
-      </button>
-
-      <div className="mt-5 rounded-2xl border border-amber-300/30 bg-slate-950/20 p-3 text-xs font-bold leading-relaxed text-amber-100">
-        🗺️ 오늘의 미션을 따라 함수 그래프를 탐험해요.
-      </div>
     </aside>
   );
 }
 
-
-function Header({ activeTitle, setActive, expPoints = 0, grade = "middle1", setGrade, studentName = "학생 이름", onLogout, isGuest = false, language = "ko" }) {
-  const gradeLabels = { middle1: "중1", middle2: "중2", middle3: "중3" };
-
+function Header({ grade = "middle1", language = "ko" }) {
   const gradeTheme = {
     middle1: {
       title: "좌표에서 시작하는 그래프 탐험대",
@@ -1714,62 +1850,15 @@ function Header({ activeTitle, setActive, expPoints = 0, grade = "middle1", setG
   const currentTheme = gradeTheme[grade] || gradeTheme.middle1;
 
   return (
-    <header className="quest-header shrink-0 rounded-[1.8rem] px-5 py-4">
-      <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-        <div>
-          <div className="text-sm font-black text-blue-700">✧ {currentTheme.units}</div>
-          <h1 className="mt-1 text-3xl font-black tracking-tight text-blue-950">{currentTheme.title}</h1>
-          <p className="mt-1 text-sm font-bold text-slate-600">{getUiText(language, "flow")}</p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="rounded-2xl border border-amber-200 bg-white/80 px-4 py-2 text-sm font-black text-blue-950 shadow-sm">
-            🙂 {studentName}
-          </div>
-
-          <div className="quest-badge rounded-2xl px-5 py-2 text-base font-black">
-            {isGuest ? getUiText(language, "guestMode") : `⭐ ${expPoints}P`}
-          </div>
-
-          {Object.entries(gradeLabels).map(([key, label]) => {
-            const selected = grade === key;
-            const color =
-              key === "middle1"
-                ? "from-blue-600 to-blue-800"
-                : key === "middle2"
-                  ? "from-emerald-600 to-emerald-800"
-                  : "from-purple-600 to-purple-800";
-
-            return (
-              <button
-                key={key}
-                onClick={() => {
-                  setGrade(key);
-                  setActive("home");
-                }}
-                className={`rounded-2xl border-2 px-5 py-2 text-base font-black shadow-sm transition ${
-                  selected
-                    ? `border-amber-300 bg-gradient-to-b ${color} text-white`
-                    : "border-transparent bg-white/70 text-slate-700 hover:border-amber-300"
-                }`}
-              >
-                {label}
-              </button>
-            );
-          })}
-
-          <button
-            onClick={onLogout}
-            className="rounded-2xl border border-rose-200 bg-white/80 px-4 py-2 text-sm font-black text-rose-600 hover:bg-rose-50"
-          >
-            {isGuest ? getUiText(language, "endGuest") : getUiText(language, "logout")}
-          </button>
-        </div>
+    <header className="quest-header quest-header-compact shrink-0 rounded-[1.8rem] px-5 py-3">
+      <div>
+        <div className="text-sm font-black text-blue-700">✧ {currentTheme.units}</div>
+        <h1 className="mt-1 text-3xl font-black tracking-tight text-blue-950">{currentTheme.title}</h1>
+        <p className="mt-1 text-sm font-bold text-slate-600">{getUiText(language, "flow")}</p>
       </div>
     </header>
   );
 }
-
 
 function AdminScreen() {
   const [students, setStudents] = useState([]);
@@ -1984,17 +2073,18 @@ function MissionStatusBadge({ done }) {
 }
 
 
-function HomeScreen({ setActive, expPoints = 0, isMissionComplete }) {
+function HomeScreen({ setActive, expPoints = 0, isMissionComplete, onOpenLearningGuide }) {
   const homeTiles = [
     {
-      type: "points",
-      title: "탐험 포인트",
-      desc: "게임과 학습 활동을 하며 모은 포인트입니다.",
-      icon: Star,
+      type: "guide",
+      title: "오늘의 추천 학습",
+      desc: "학습준비 → 개념학습 → 탐구활동 → AI 그래프 해석 → 게임존 → 형성평가 순서로 탐험해요.",
+      icon: Compass,
       color: "orange",
       value: `${expPoints}P`,
-      art: "⭐",
-      tag: "보상 현황",
+      art: "🧭",
+      tag: `추천 경로 · ${expPoints}P`,
+      action: "자세히 보기",
       className: "quest-home-card--points",
     },
     {
@@ -2085,6 +2175,7 @@ function HomeScreen({ setActive, expPoints = 0, isMissionComplete }) {
       {homeTiles.map((tile) => {
         const Icon = tile.icon;
         const isPointTile = tile.type === "points";
+        const isGuideTile = tile.type === "guide";
         const done = tile.mission ? isMissionComplete(tile.mission) : false;
 
         return (
@@ -2112,7 +2203,15 @@ function HomeScreen({ setActive, expPoints = 0, isMissionComplete }) {
                 )}
               </div>
 
-              {isPointTile ? (
+              {isGuideTile ? (
+                <button
+                  type="button"
+                  onClick={onOpenLearningGuide}
+                  className="quest-button flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-base"
+                >
+                  자세히 보기 <ChevronRight className="h-4 w-4" />
+                </button>
+              ) : isPointTile ? (
                 <div className="quest-note rounded-2xl px-4 py-3 text-sm font-black text-amber-800">
                   학습 미션을 완료하면 포인트가 올라가요.
                 </div>
@@ -2135,23 +2234,56 @@ function HomeScreen({ setActive, expPoints = 0, isMissionComplete }) {
   );
 }
 
-function FunctionGraphAssistant() {
+function FunctionGraphAssistant({ grade }) {
   const [input, setInput] = useState("y=");
   const [parsed, setParsed] = useState(null);
   const [showAnswer, setShowAnswer] = useState(false);
+  const [aiFeedback, setAiFeedback] = useState(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState("");
   const analysis = analyzeMiddleSchoolFunction(parsed);
-  const runAnalyze = () => {
-    setParsed(parseMiddleSchoolFunction(input));
-    setShowAnswer(false);
-  };
 
-  const sampleGroups = [
-    { label: "정비례 예시", value: "y=2x" },
-    { label: "반비례 예시", value: "y=4/x" },
-    { label: "일차함수 예시", value: "y=-x+3" },
-    { label: "이차함수 예시", value: "y=x^2-4x+3" },
-    { label: "이차함수 표준형", value: "y=(x-2)^2+3" },
-  ];
+  const runAnalyze = async () => {
+    const nextParsed = parseMiddleSchoolFunction(input);
+    setParsed(nextParsed);
+    setShowAnswer(false);
+    setAiFeedback(null);
+    setAiError("");
+
+    if (!nextParsed || nextParsed.error) return;
+
+    const exactAnalysis = analyzeMiddleSchoolFunction(nextParsed);
+    if (!exactAnalysis) return;
+
+    setAiLoading(true);
+    try {
+      const response = await fetch("/.netlify/functions/ai-graph-coach", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          grade,
+          expression: input,
+          exactAnalysis: {
+            summary: exactAnalysis.summary,
+            features: exactAnalysis.features,
+            question: exactAnalysis.question,
+            answer: exactAnalysis.answer,
+          },
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data?.error || "AI 피드백을 불러오지 못했습니다.");
+      }
+      setAiFeedback(data.feedback || null);
+    } catch (error) {
+      console.error(error);
+      setAiError(error?.message || "AI 피드백을 불러오지 못했습니다.");
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   return (
     <Card className="quest-ai-lab h-full overflow-hidden p-5">
@@ -2161,62 +2293,64 @@ function FunctionGraphAssistant() {
             <IconBadge icon={Bot} color="blue" />
             <div>
               <h2 className="text-2xl font-black text-blue-950">AI 그래프 해석실</h2>
-              <p className="text-sm text-slate-500">식 입력 → 교과서형 그래프 확인 → 개념 해석 순서로 학습합니다.</p>
+              <p className="text-sm text-slate-500">정확한 그래프 분석과 생성형 AI 코칭을 함께 제공합니다.</p>
             </div>
           </div>
-          <div className="rounded-2xl bg-blue-50 px-4 py-2 text-sm font-black text-blue-700">정비례 · 반비례 · 일차함수 · 이차함수</div>
+          <div className="rounded-2xl bg-blue-50 px-4 py-2 text-sm font-black text-blue-700">그래프 분석 · 오개념 코칭 · 생각 질문</div>
         </div>
 
-        <div className="grid min-h-0 flex-1 gap-4 xl:grid-cols-[380px_1fr]">
-          <div className="quest-ai-controls flex min-h-0 flex-col gap-4 overflow-hidden rounded-[1.7rem] border border-blue-100 bg-blue-50/60 p-5">
+        <div className="quest-ai-workspace grid min-h-0 flex-1 gap-4 xl:grid-cols-[440px_1fr]">
+          <div className="quest-ai-controls flex min-h-0 flex-col gap-3 overflow-y-auto rounded-[1.7rem] border border-blue-100 bg-blue-50/60 p-5">
             <div>
-              <label className="mb-2 block text-base font-black text-blue-950">함수식을 입력하세요.</label>
-              <div className="relative">
-                <input
-                  value={input}
-                  onChange={(event) => {
-                    const value = event.target.value.replaceAll(" ", "");
-                    setInput(value.startsWith("y=") ? value : `y=${value.replace(/^y=?/i, "")}`);
-                  }}
-                  onKeyDown={(event) => event.key === "Enter" && runAnalyze()}
-                  className="w-full rounded-2xl border border-blue-100 bg-white px-5 py-4 text-xl font-black text-blue-950 outline-none focus:border-blue-400"
-                  placeholder="y="
-                />
-                {input === "y=" && (
-                  <span className="pointer-events-none absolute left-[54px] top-1/2 -translate-y-1/2 text-lg font-bold text-slate-400">
-                    (예) 3x
-                  </span>
-                )}
-              </div>
+              <label className="mb-3 block text-xl font-black text-blue-950">궁금한 함수식을 입력하세요.</label>
+              <input
+                value={input}
+                onChange={(event) => {
+                  const value = event.target.value.replaceAll(" ", "");
+                  setInput(value.startsWith("y=") ? value : `y=${value.replace(/^y=?/i, "")}`);
+                  setParsed(null);
+                  setShowAnswer(false);
+                  setAiFeedback(null);
+                  setAiError("");
+                }}
+                className="w-full rounded-2xl border border-blue-100 bg-white px-5 py-4 text-xl font-black text-blue-950 outline-none focus:border-blue-400"
+                placeholder="y="
+              />
             </div>
 
-            <div className="grid gap-2">
-              {sampleGroups.map((sample) => (
-                <button
-                  key={sample.value}
-                  onClick={() => {
-                    setInput(sample.value);
-                    setParsed(parseMiddleSchoolFunction(sample.value));
-                    setShowAnswer(false);
-                  }}
-                  className="quest-ai-sample-card rounded-2xl border border-white bg-white px-4 py-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
-                >
-                  <div className="text-xs font-black text-slate-500">{sample.label}</div>
-                  <div className="mt-1 text-lg font-black text-blue-800">{sample.value}</div>
-                </button>
-              ))}
-            </div>
-
-            <button onClick={runAnalyze} className="quest-button mt-auto flex w-full items-center justify-center gap-2 rounded-2xl px-6 py-4 text-base font-black transition">
-              <Sparkles className="h-5 w-5" /> AI 그래프 해석 시작
+            <button
+              onClick={runAnalyze}
+              disabled={aiLoading}
+              className="quest-button flex w-full shrink-0 items-center justify-center gap-2 rounded-2xl px-6 py-4 text-base font-black transition disabled:cursor-wait disabled:opacity-70"
+            >
+              <Sparkles className={`h-5 w-5 ${aiLoading ? "animate-pulse" : ""}`} />
+              {aiLoading ? "AI 함수 코치가 분석 중..." : "AI 그래프 해석 시작"}
             </button>
 
-            {parsed?.error && <div className="rounded-2xl bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700">{parsed.error}</div>}
+            {parsed?.error && (
+              <div className="rounded-2xl bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700">{parsed.error}</div>
+            )}
+
+            {!analysis && !parsed?.error && (
+              <div className="quest-ai-waiting rounded-2xl border border-blue-100 bg-white/85 px-4 py-4 text-sm font-bold leading-relaxed text-slate-600">
+                함수식을 입력한 뒤 <span className="font-black text-blue-700">AI 그래프 해석 시작</span> 버튼을 누르세요.
+              </div>
+            )}
+
+            {analysis && (
+              <AnalysisCard
+                analysis={analysis}
+                aiFeedback={aiFeedback}
+                aiLoading={aiLoading}
+                aiError={aiError}
+                showAnswer={showAnswer}
+                setShowAnswer={setShowAnswer}
+              />
+            )}
           </div>
 
-          <div className="grid min-h-0 grid-rows-[1fr_auto] gap-4 overflow-hidden">
+          <div className="min-h-0 overflow-hidden">
             <FunctionGraphCanvas parsed={parsed} analysis={analysis} />
-            {analysis && <AnalysisCard analysis={analysis} showAnswer={showAnswer} setShowAnswer={setShowAnswer} />}
           </div>
         </div>
       </div>
@@ -2224,31 +2358,85 @@ function FunctionGraphAssistant() {
   );
 }
 
-function AnalysisCard({ analysis, showAnswer, setShowAnswer }) {
+function AnalysisCard({ analysis, aiFeedback, aiLoading, aiError, showAnswer, setShowAnswer }) {
   return (
-    <div className="quest-analysis-card shrink-0 rounded-[1.5rem] border border-blue-100 bg-white p-4">
+    <div className="quest-analysis-card quest-analysis-card-left rounded-[1.5rem] border border-blue-100 bg-white p-4">
       <div className="mb-3 flex items-center justify-between gap-3">
-        <h4 className="text-lg font-black text-blue-950">그래프에서 확인할 점</h4>
-        <div className="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">개념 해석</div>
+        <h4 className="text-lg font-black text-blue-950">정확한 그래프 분석</h4>
+        <div className="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">프로그램 계산</div>
       </div>
-      <div className="grid gap-3 xl:grid-cols-[1.2fr_1.6fr_1.1fr]">
-        <p className="rounded-2xl bg-slate-50 px-4 py-3 text-sm font-bold leading-relaxed text-slate-700">{analysis.summary}</p>
-        <div className="grid grid-cols-2 gap-2">
-          {analysis.features.map(([label, value]) => (
-            <div key={label} className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
-              <div className="text-xs font-bold text-slate-500">{label}</div>
-              <div className="mt-1 text-sm font-black text-slate-800">{value}</div>
+
+      <p className="rounded-2xl bg-slate-50 px-4 py-3 text-sm font-bold leading-relaxed text-slate-700">{analysis.summary}</p>
+
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        {analysis.features.map(([label, value]) => (
+          <div key={label} className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+            <div className="text-xs font-bold text-slate-500">{label}</div>
+            <div className="mt-1 text-sm font-black text-slate-800">{value}</div>
+          </div>
+        ))}
+      </div>
+
+      {aiLoading && (
+        <div className="mt-3 rounded-2xl border border-indigo-100 bg-indigo-50 p-4 text-sm font-bold text-indigo-800">
+          🤖 입력한 함수에 맞는 설명과 생각 질문을 만들고 있습니다.
+        </div>
+      )}
+
+      {aiError && (
+        <div className="mt-3 rounded-2xl border border-rose-100 bg-rose-50 p-4 text-sm font-bold leading-relaxed text-rose-700">
+          AI 코칭을 불러오지 못했습니다. 그래프와 프로그램 분석은 정상적으로 사용할 수 있습니다.<br />
+          <span className="text-xs">오류: {aiError}</span>
+        </div>
+      )}
+
+      {aiFeedback && (
+        <div className="mt-3 space-y-3 rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-white p-4">
+          <div className="flex items-center justify-between gap-2">
+            <div className="font-black text-indigo-950">🤖 {aiFeedback.title || "AI 함수 코치"}</div>
+            <div className="rounded-full bg-white px-3 py-1 text-[11px] font-black text-indigo-700">생성형 AI 피드백</div>
+          </div>
+          <p className="text-sm font-bold leading-relaxed text-slate-700">{aiFeedback.explanation}</p>
+
+          {Array.isArray(aiFeedback.keyPoints) && aiFeedback.keyPoints.length > 0 && (
+            <div className="rounded-2xl bg-white p-3">
+              <div className="text-sm font-black text-indigo-900">그래프에서 찾아볼 점</div>
+              <div className="mt-2 space-y-1">
+                {aiFeedback.keyPoints.map((point, index) => (
+                  <div key={`${point}-${index}`} className="text-sm font-bold text-slate-700">• {point}</div>
+                ))}
+              </div>
             </div>
-          ))}
+          )}
+
+          <div className="rounded-2xl bg-amber-50 p-3 text-sm">
+            <div className="font-black text-amber-900">⚠ 자주 하는 실수</div>
+            <div className="mt-1 font-bold leading-relaxed text-slate-700">{aiFeedback.commonMistake}</div>
+          </div>
+
+          <div className="rounded-2xl bg-emerald-50 p-3 text-sm">
+            <div className="font-black text-emerald-900">💭 AI의 생각 질문</div>
+            <div className="mt-1 font-bold leading-relaxed text-slate-700">{aiFeedback.thinkingQuestion}</div>
+            <details className="mt-2 rounded-xl bg-white px-3 py-2">
+              <summary className="cursor-pointer font-black text-emerald-700">힌트 보기</summary>
+              <div className="mt-2 font-bold text-slate-700">{aiFeedback.hint}</div>
+            </details>
+          </div>
+
+          <div className="rounded-2xl bg-blue-50 p-3 text-sm">
+            <div className="font-black text-blue-900">🧭 다음 탐험 추천</div>
+            <div className="mt-1 font-bold leading-relaxed text-slate-700">{aiFeedback.nextActivity}</div>
+          </div>
         </div>
-        <div className="rounded-2xl bg-amber-50 p-3 text-sm">
-          <div className="font-black text-amber-900">한 문제 더 풀기</div>
-          <div className="mt-1 text-slate-700">{analysis.question}</div>
-          <button onClick={() => setShowAnswer(!showAnswer)} className="mt-2 rounded-xl bg-white px-3 py-2 font-black text-amber-700">
-            {showAnswer ? "정답 숨기기" : "정답 보기"}
-          </button>
-          {showAnswer && <div className="mt-2 font-bold text-slate-700">정답: {analysis.answer}</div>}
-        </div>
+      )}
+
+      <div className="mt-3 rounded-2xl bg-amber-50 p-3 text-sm">
+        <div className="font-black text-amber-900">한 문제 더 풀기</div>
+        <div className="mt-1 font-bold text-slate-700">{analysis.question}</div>
+        <button onClick={() => setShowAnswer(!showAnswer)} className="mt-2 rounded-xl bg-white px-3 py-2 font-black text-amber-700">
+          {showAnswer ? "정답 숨기기" : "정답 보기"}
+        </button>
+        {showAnswer && <div className="mt-2 font-bold text-slate-700">정답: {analysis.answer}</div>}
       </div>
     </div>
   );
@@ -2431,7 +2619,7 @@ function ReadyScreen({ setActive, completeMission, isMissionComplete }) {
       : firstWrong?.recommend || "기초 개념을 확인한 뒤 개념학습으로 이동해 보세요.";
 
   return (
-    <Card className="quest-ready-screen h-full overflow-hidden p-5">
+    <Card className={`quest-ready-screen h-full overflow-hidden p-5 ${submitted ? "is-submitted" : ""}`}>
       <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div>
           <div className="text-sm font-black text-blue-700">✦ 오늘의 출발 퀘스트</div>
@@ -2460,7 +2648,7 @@ function ReadyScreen({ setActive, completeMission, isMissionComplete }) {
 
                 <h3 className="min-h-[54px] text-base font-black leading-snug text-blue-950">{item.q}</h3>
 
-                <div className="mt-3 grid flex-1 content-start gap-2">
+                <div className="quest-choice-grid mt-3 grid grid-cols-2 content-start gap-2">
                   {item.choices.map((choice) => (
                     <button
                       key={choice}
@@ -2468,7 +2656,7 @@ function ReadyScreen({ setActive, completeMission, isMissionComplete }) {
                         setAnswers((prev) => ({ ...prev, [item.id]: choice }));
                         setSubmitted(false);
                       }}
-                      className={`quest-choice-button rounded-2xl border px-3 py-2 text-left text-sm font-black transition ${
+                      className={`quest-choice-button min-w-0 rounded-2xl border px-3 py-2 text-left text-sm font-black transition ${
                         selected === choice ? "selected" : ""
                       }`}
                     >
@@ -2478,7 +2666,7 @@ function ReadyScreen({ setActive, completeMission, isMissionComplete }) {
                 </div>
 
                 {submitted && selected && (
-                  <div className={`mt-3 rounded-2xl px-3 py-2 text-xs font-bold ${isCorrect ? "bg-emerald-50 text-emerald-800" : "bg-rose-50 text-rose-800"}`}>
+                  <div className={`quest-answer-feedback ready-feedback mt-3 rounded-2xl px-3 py-2 text-xs font-bold ${isCorrect ? "bg-emerald-50 text-emerald-800" : "bg-rose-50 text-rose-800"}`}>
                     {isCorrect ? "정답입니다. " : `정답: ${item.answer}. `}{item.feedback}
                   </div>
                 )}
@@ -2584,48 +2772,19 @@ function ConceptScreen({ selectedConcept, setSelectedConcept, completeMission, i
 
   if (!lesson) {
     return (
-      <Card className="concept-quest-screen h-full overflow-hidden p-5">
-        <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
-          <div>
-            <div className="quest-section-kicker">✧ 개념 도감 퀘스트</div>
-            <h2 className="text-3xl font-black text-blue-950">개념을 차근차근 익혀요!</h2>
-            <p className="mt-1 text-sm font-bold text-slate-600">상황, 표, 식, 그래프를 연결하면서 함수 개념을 익힙니다.</p>
-          </div>
-          <div className="quest-small-banner">✦ 표상 연결 중심</div>
+      <Card className="concept-simple-screen h-full overflow-hidden p-5">
+        <div className="concept-simple-header">
+          <div className="quest-section-kicker">✧ 개념 도감 퀘스트</div>
+          <h2 className="text-3xl font-black text-blue-950">개념을 차근차근 익혀요!</h2>
+          <p className="mt-1 text-sm font-bold text-slate-600">학습할 개념을 선택하세요.</p>
         </div>
-
-        <div className="concept-quest-grid h-[calc(100%-86px)]">
-          {conceptCards.map((card) => {
-            const meta = conceptQuestMeta[card.id] || conceptQuestMeta.orderedPair;
-            return (
-              <button
-                key={card.id}
-                onClick={() => setSelectedConcept(card.id)}
-                className={`concept-quest-card concept-tone-${meta.tone} group`}
-              >
-                <div className="concept-card-topline">
-                  <span className="concept-side-icon">{meta.icon}</span>
-                  <span className="concept-badge-label">{meta.badge}</span>
-                </div>
-
-                <div className="concept-magic-row">
-                  <div className="concept-decoration left">{meta.icon}</div>
-                  <div className="concept-magic-panel">
-                    {meta.panel === "axes" ? <AxesMini /> : <span>{meta.panel}</span>}
-                  </div>
-                  <div className="concept-decoration right">{meta.subIcon}</div>
-                </div>
-
-                <h3 className="mt-3 text-2xl font-black text-blue-950">{card.title}</h3>
-                <p className="mt-1 text-sm font-bold text-slate-600">{card.desc}</p>
-                <div className="mt-2 rounded-2xl bg-white/55 px-3 py-2 text-xs font-black text-slate-600">{meta.hint}</div>
-
-                <div className="concept-learn-button mt-auto">
-                  학습하기 <ChevronRight className="h-4 w-4" />
-                </div>
-              </button>
-            );
-          })}
+        <div className="concept-simple-grid">
+          {conceptCards.map((card) => (
+            <button key={card.id} onClick={() => setSelectedConcept(card.id)} className={`concept-simple-button concept-simple-${card.id}`}>
+              <span>{card.title}</span>
+              <ChevronRight className="h-7 w-7" />
+            </button>
+          ))}
         </div>
       </Card>
     );
@@ -3262,7 +3421,7 @@ function GameScreen({ awardPoints, expPoints }) {
 
   if (!gameMode) {
     return (
-      <Card className="quest-game-zone h-full overflow-hidden p-5">
+      <Card className="quest-game-zone min-h-full p-5">
         <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <div>
             <h2 className="text-2xl font-black text-blue-950">게임존</h2>
@@ -3270,7 +3429,7 @@ function GameScreen({ awardPoints, expPoints }) {
           </div>
           <div className="rounded-2xl bg-amber-50 px-5 py-3 text-lg font-black text-amber-700">⭐ {expPoints}P</div>
         </div>
-        <div className="grid h-[calc(100%-84px)] min-h-0 grid-cols-2 grid-rows-2 gap-4">
+        <div className="quest-game-select-grid grid min-h-0 grid-cols-2 grid-rows-2 gap-4">
           {games.map((game) => (
             <button key={game.id} onClick={() => setGameMode(game.id)} className="quest-game-select-card group rounded-[2rem] border border-blue-200 bg-gradient-to-br from-white to-blue-50 p-5 text-left shadow-sm transition hover:-translate-y-1 hover:border-blue-300 hover:shadow-lg">
               <div className="flex h-full flex-col justify-between gap-4">
@@ -3291,13 +3450,13 @@ function GameScreen({ awardPoints, expPoints }) {
   }
 
   return (
-    <div className="quest-game-stage quest-game-stage-linear grid h-full grid-rows-[46px_1fr] gap-2 overflow-hidden rounded-[2rem] border border-blue-100 bg-white/90 p-2 shadow-sm">
+    <div className="quest-game-stage quest-game-stage-linear grid min-h-full grid-rows-[46px_auto] gap-2 rounded-[2rem] border border-blue-100 bg-white/90 p-2 shadow-sm">
       <div className="flex items-center justify-end rounded-[1.25rem] bg-blue-50/70 px-3">
         <button onClick={() => setGameMode(null)} className="rounded-2xl border border-blue-200 bg-white px-4 py-2 text-xs font-black text-blue-700 shadow-sm hover:bg-blue-50">
           ← 게임 선택
         </button>
       </div>
-      <div className="min-h-0 overflow-hidden rounded-[1.5rem]">
+      <div className="quest-game-embed min-h-0 overflow-visible rounded-[1.5rem]">
         {gameMode === "mole" ? (
           <CoordinateMoleGame awardPoints={awardPoints} />
         ) : gameMode === "matching" ? (
@@ -4622,7 +4781,7 @@ const gradeExtensionData = {
   },
 };
 
-function GradeExtensionHome({ grade, setActive, expPoints, isMissionComplete }) {
+function GradeExtensionHome({ grade, setActive, expPoints, isMissionComplete, onOpenLearningGuide }) {
   const data = gradeExtensionData[grade];
   const gradeArt = {
     middle2: {
@@ -4652,14 +4811,15 @@ function GradeExtensionHome({ grade, setActive, expPoints, isMissionComplete }) 
 
   const tiles = [
     {
-      type: "points",
-      title: "탐험 포인트",
-      desc: `${data.gradeLabel} 함수 탐험 포인트`,
-      icon: Star,
+      type: "guide",
+      title: "오늘의 추천 학습",
+      desc: `${data.gradeLabel} 학습을 학습준비부터 형성평가까지 순서대로 탐험해요.`,
+      icon: Compass,
       color: "orange",
       value: `${expPoints}P`,
-      art: artSet.points,
-      tag: "보상 현황",
+      art: "🧭",
+      tag: `추천 경로 · ${expPoints}P`,
+      action: "자세히 보기",
       className: "quest-home-card--points",
     },
     {
@@ -4750,6 +4910,7 @@ function GradeExtensionHome({ grade, setActive, expPoints, isMissionComplete }) 
       {tiles.map((tile) => {
         const Icon = tile.icon;
         const isPointTile = tile.type === "points";
+        const isGuideTile = tile.type === "guide";
         const done = tile.mission ? isMissionComplete(tile.mission) : false;
 
         return (
@@ -4778,7 +4939,15 @@ function GradeExtensionHome({ grade, setActive, expPoints, isMissionComplete }) 
                 )}
               </div>
 
-              {isPointTile ? (
+              {isGuideTile ? (
+                <button
+                  type="button"
+                  onClick={onOpenLearningGuide}
+                  className="quest-button flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-base"
+                >
+                  자세히 보기 <ChevronRight className="h-4 w-4" />
+                </button>
+              ) : isPointTile ? (
                 <div className="quest-note rounded-2xl px-4 py-3 text-sm font-black text-amber-800">
                   학습 미션 완료 시 포인트가 올라가요.
                 </div>
@@ -4905,7 +5074,7 @@ function GradeExtensionReady({ grade, setActive, completeMission, isMissionCompl
   const targetLabel = recommendedTarget === "explore" ? "탐구활동" : recommendedTarget === "ai" ? "그래프 해석실" : "개념학습";
 
   return (
-    <Card className="h-full overflow-hidden p-5">
+    <Card className={`grade-ready-screen h-full overflow-hidden p-5 ${submitted ? "is-submitted" : ""}`}>
       <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div>
           <h2 className="text-2xl font-black text-blue-950">{data.gradeLabel} 학습준비: 사전 진단</h2>
@@ -4928,7 +5097,7 @@ function GradeExtensionReady({ grade, setActive, completeMission, isMissionCompl
                   <div className="text-xs font-black text-slate-500">{item.title}</div>
                 </div>
                 <h3 className="min-h-[58px] text-base font-black leading-snug text-blue-950">{item.q}</h3>
-                <div className="mt-4 space-y-2">
+                <div className="grade-ready-choice-grid mt-4 grid grid-cols-2 content-start gap-2">
                   {item.choices.map((choice) => (
                     <button
                       key={choice}
@@ -4936,8 +5105,8 @@ function GradeExtensionReady({ grade, setActive, completeMission, isMissionCompl
                         setAnswers((prev) => ({ ...prev, [item.id]: choice }));
                         setSubmitted(false);
                       }}
-                      className={`w-full rounded-2xl border px-3 py-2 text-left text-sm font-bold transition ${
-                        selected === choice ? "border-blue-500 bg-blue-600 text-white" : "border-blue-100 bg-slate-50 text-slate-700 hover:bg-blue-50"
+                      className={`grade-ready-choice-button w-full min-w-0 rounded-2xl border px-3 py-2 text-left text-sm font-bold transition ${
+                        selected === choice ? "selected border-blue-500 bg-blue-600 text-white" : "border-blue-100 bg-slate-50 text-slate-700 hover:bg-blue-50"
                       }`}
                     >
                       {choice}
@@ -4945,7 +5114,7 @@ function GradeExtensionReady({ grade, setActive, completeMission, isMissionCompl
                   ))}
                 </div>
                 {submitted && selected && (
-                  <div className={`mt-3 rounded-2xl px-3 py-2 text-xs font-bold ${isCorrect ? "bg-green-50 text-green-800" : "bg-rose-50 text-rose-800"}`}>
+                  <div className={`grade-ready-feedback ready-feedback mt-3 rounded-2xl px-3 py-2 text-xs font-bold ${isCorrect ? "bg-green-50 text-green-800" : "bg-rose-50 text-rose-800"}`}>
                     {isCorrect ? "정답입니다. " : `정답: ${item.answer}. `}{item.feedback}
                   </div>
                 )}
@@ -5550,14 +5719,14 @@ function GradeExtensionGame({ grade, awardPoints, expPoints }) {
 
   if (grade === "middle2") {
     return (
-      <div className="quest-game-stage quest-game-stage-linear grid h-full grid-rows-[46px_1fr] gap-2 overflow-hidden rounded-[2rem] border border-blue-100 bg-white/90 p-2 shadow-sm">
-        <div className="flex items-center justify-between rounded-[1.25rem] bg-blue-50/70 px-3">
-          <div className="text-sm font-black text-blue-900">일차함수 레이저 슈터 · 게임 전용 점수</div>
+      <div className="quest-game-stage quest-game-stage-linear grade-game-shell">
+        <div className="quest-game-stage-header">
+          <div className="text-sm font-black">일차함수 레이저 슈터 · 게임 전용 점수</div>
           <div className="rounded-2xl bg-white px-4 py-2 text-xs font-black text-amber-700 shadow-sm">
             전체 탐험 포인트와 연동되지 않음
           </div>
         </div>
-        <div className="min-h-0 overflow-hidden rounded-[1.5rem]">
+        <div className="quest-linear-game-frame">
           <LinearLaserShooterGame />
         </div>
       </div>
@@ -5566,14 +5735,14 @@ function GradeExtensionGame({ grade, awardPoints, expPoints }) {
 
   if (grade === "middle3") {
     return (
-      <div className="quest-game-stage quest-game-stage-parabola grid h-full grid-rows-[46px_1fr] gap-2 overflow-hidden rounded-[2rem] border border-purple-100 bg-white/90 p-2 shadow-sm">
-        <div className="flex items-center justify-between rounded-[1.25rem] bg-purple-50/80 px-3">
-          <div className="text-sm font-black text-purple-900">포물선 마스터 · 게임 전용 점수</div>
+      <div className="quest-game-stage quest-game-stage-parabola grade-game-shell">
+        <div className="quest-game-stage-header quest-game-stage-header-purple">
+          <div className="text-sm font-black">포물선 마스터 · 게임 전용 점수</div>
           <div className="rounded-2xl bg-white px-4 py-2 text-xs font-black text-amber-700 shadow-sm">
             전체 탐험 포인트와 연동되지 않음
           </div>
         </div>
-        <div className="min-h-0 overflow-hidden rounded-[1.5rem]">
+        <div className="grade-game-content-frame">
           <ParabolaMasterGame />
         </div>
       </div>
@@ -5700,8 +5869,8 @@ function ParabolaMasterGame() {
   };
 
   return (
-    <div className="grid h-full min-h-0 gap-3 overflow-hidden bg-slate-50 p-2 text-slate-800 xl:grid-cols-[1.35fr_0.95fr]">
-      <div className="flex min-h-0 flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white p-3 shadow-md">
+    <div className="parabola-master-game grid h-full min-h-0 gap-3 overflow-hidden bg-slate-50 p-2 text-slate-800 xl:grid-cols-[1.35fr_0.95fr]">
+      <div className="parabola-graph-panel flex min-h-0 flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white p-3 shadow-md">
         <div className="mb-2 flex shrink-0 items-center justify-between gap-3">
           <div>
             <h3 className="text-lg font-black text-purple-900">포물선 마스터: 타겟을 맞춰라!</h3>
@@ -5709,8 +5878,8 @@ function ParabolaMasterGame() {
           </div>
           <div className="rounded-2xl bg-amber-50 px-4 py-2 text-sm font-black text-amber-700">게임 점수 {gameScore}점</div>
         </div>
-        <div className="flex min-h-0 flex-1 items-center justify-center rounded-2xl bg-slate-50 p-2">
-          <svg viewBox={`0 0 ${size} ${size}`} className="h-full max-h-full w-auto rounded-2xl bg-white shadow-inner">
+        <div className="parabola-svg-wrap flex min-h-0 flex-1 items-center justify-center rounded-2xl bg-slate-50 p-2">
+          <svg viewBox={`0 0 ${size} ${size}`} className="parabola-master-svg h-full max-h-full w-auto rounded-2xl bg-white shadow-inner">
             <defs><clipPath id="parabola-master-clip"><rect x={padding} y={padding} width={plot} height={plot} /></clipPath></defs>
             {ticks.map((tick) => (
               <g key={tick}>
@@ -5746,7 +5915,7 @@ function ParabolaMasterGame() {
         </div>
       </div>
 
-      <div className="flex min-h-0 flex-col gap-2 overflow-hidden rounded-3xl border border-slate-200 bg-white p-3 shadow-md">
+      <div className="parabola-control-panel flex min-h-0 flex-col gap-2 overflow-hidden rounded-3xl border border-slate-200 bg-white p-3 shadow-md">
         <div className="shrink-0 rounded-2xl bg-gradient-to-b from-indigo-50 to-purple-50 p-3">
           <div className="mb-2 flex items-center justify-between">
             <span className="rounded-full bg-indigo-100 px-3 py-1 text-xs font-black text-indigo-700">레벨 {level.id}</span>
@@ -6041,11 +6210,11 @@ __END_SCRIPT__
 </html>`.replaceAll("__END_SCRIPT__", endScriptTag);
 
   return (
-    <div className="h-full overflow-hidden rounded-[1.5rem] bg-white">
+    <div className="linear-laser-game">
       <iframe
         title="일차함수 레이저 슈터"
         srcDoc={originalHtml}
-        className="h-full w-full border-0"
+        className="linear-laser-iframe"
         sandbox="allow-scripts allow-same-origin allow-modals"
       />
     </div>
