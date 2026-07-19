@@ -2797,12 +2797,13 @@ function ConceptScreen({ selectedConcept, setSelectedConcept, completeMission, i
         "반비례 관계 y=a/x의 표, 식, 그래프의 특징을 탐구해요.",
     };
 
-    const badges = {
-      orderedPair: "(x, y)",
-      coordinate: "좌표평면",
-      direct: "y=ax",
-      inverse: "y=a/x",
-    };
+    const getConceptBadge = (card) => {
+  if (card.title === "순서쌍과 좌표") return "(x, y)";
+  if (card.title === "좌표평면") return "x축 · y축";
+  if (card.title === "정비례") return "y=ax";
+  if (card.title === "반비례") return "y=a/x";
+  return "개념";
+};
 
     const cardStyles = {
       orderedPair: "border-amber-300 bg-amber-50",
@@ -2823,7 +2824,7 @@ function ConceptScreen({ selectedConcept, setSelectedConcept, completeMission, i
                      border border-amber-300 bg-gradient-to-b from-blue-500 to-blue-800
                      px-5 py-3 text-xl font-black text-white shadow-lg"
         >
-          {badges[card.id] || index + 1}
+          {getConceptBadge(card)}
         </div>
 
         <h3 className="text-2xl font-black text-blue-950">
