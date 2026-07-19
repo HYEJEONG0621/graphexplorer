@@ -4432,3 +4432,121 @@ main,
     padding-bottom: 3rem !important;
   }
 }
+/* ============================
+   AI 그래프 해석실 개선
+============================ */
+
+.ai-graph-layout{
+    display:grid;
+    grid-template-columns:430px 1fr;
+    gap:20px;
+
+    height:calc(100vh - 130px);
+    overflow:hidden;
+}
+
+.ai-analysis-panel{
+    height:100%;
+    overflow-y:auto;
+    overflow-x:hidden;
+
+    padding-right:10px;
+
+    scroll-behavior:smooth;
+}
+
+.ai-graph-panel{
+    height:100%;
+
+    position:sticky;
+    top:0;
+
+    overflow:hidden;
+}
+
+.ai-analysis-panel::-webkit-scrollbar{
+    width:8px;
+}
+
+.ai-analysis-panel::-webkit-scrollbar-thumb{
+    border-radius:20px;
+}
+/* ==================================================
+   AI 그래프 해석실: 왼쪽 패널만 스크롤
+================================================== */
+
+.quest-ai-lab {
+  height: calc(100vh - 105px);
+  min-height: 600px;
+  overflow: hidden;
+}
+
+/* 제목 아래의 좌우 작업 영역 */
+.quest-ai-workspace {
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  align-items: stretch;
+}
+
+/* 함수 입력·분석·AI 코칭 영역 */
+.quest-ai-controls {
+  min-height: 0;
+  height: 100%;
+  overflow-y: auto !important;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
+  padding-right: 12px;
+}
+
+/* 왼쪽 패널 스크롤바 */
+.quest-ai-controls::-webkit-scrollbar {
+  width: 8px;
+}
+
+.quest-ai-controls::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.quest-ai-controls::-webkit-scrollbar-thumb {
+  background: rgba(30, 64, 175, 0.25);
+  border-radius: 999px;
+}
+
+.quest-ai-controls::-webkit-scrollbar-thumb:hover {
+  background: rgba(30, 64, 175, 0.45);
+}
+
+/* 오른쪽 그래프 영역은 화면 안에 고정 */
+.quest-ai-workspace > :last-child {
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* 태블릿·작은 화면에서는 위아래 배치 */
+@media (max-width: 1279px) {
+  .quest-ai-lab {
+    height: auto;
+    min-height: auto;
+    overflow: visible;
+  }
+
+  .quest-ai-workspace {
+    height: auto;
+    overflow: visible;
+  }
+
+  .quest-ai-controls {
+    height: auto;
+    max-height: none;
+    overflow: visible !important;
+    padding-right: 0;
+  }
+
+  .quest-ai-workspace > :last-child {
+    height: auto;
+    overflow: visible;
+  }
+}

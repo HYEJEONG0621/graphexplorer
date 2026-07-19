@@ -2286,7 +2286,7 @@ function FunctionGraphAssistant({ grade }) {
   };
 
   return (
-    <Card className="quest-ai-lab h-full overflow-hidden p-5">
+    <Card className="quest-ai-lab overflow-hidden p-5">
       <div className="flex h-full min-h-0 flex-col gap-4">
         <div className="flex shrink-0 flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex items-center gap-3">
@@ -2775,22 +2775,86 @@ function ConceptScreen({ selectedConcept, setSelectedConcept, completeMission, i
       <Card className="concept-simple-screen h-full overflow-hidden p-5">
         <div className="concept-simple-header">
           <div className="quest-section-kicker">✧ 개념 도감 퀘스트</div>
-          <h2 className="text-3xl font-black text-blue-950">개념을 차근차근 익혀요!</h2>
-          <p className="mt-1 text-sm font-bold text-slate-600">학습할 개념을 선택하세요.</p>
+          <h2 className="text-3xl font-black text-blue-950">
+  개념을 차근차근 익혀요!
+</h2>
+
+<p className="mt-1 text-sm font-bold text-slate-600">
+  학습할 개념을 선택하세요. 각 개념의 핵심 내용과 탐구 활동을 확인할 수 있습니다.
+</p>
+</div>
+
+<div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
+  {conceptCards.map((card, index) => {
+    const descriptions = {
+      orderedPair:
+        "순서쌍의 뜻을 이해하고 좌표를 올바르게 읽고 나타내는 방법을 익혀요.",
+      coordinate:
+        "좌표평면의 구성과 사분면별 좌표의 부호를 알아봐요.",
+      direct:
+        "정비례 관계 y=ax의 표, 식, 그래프를 연결하여 탐구해요.",
+      inverse:
+        "반비례 관계 y=a/x의 표, 식, 그래프의 특징을 탐구해요.",
+    };
+
+    const badges = {
+      orderedPair: "(x, y)",
+      coordinate: "좌표평면",
+      direct: "y=ax",
+      inverse: "y=a/x",
+    };
+
+    const cardStyles = {
+      orderedPair: "border-amber-300 bg-amber-50",
+      coordinate: "border-blue-300 bg-blue-50",
+      direct: "border-emerald-300 bg-emerald-50",
+      inverse: "border-purple-300 bg-purple-50",
+    };
+
+    return (
+      <div
+        key={card.id}
+        className={`flex min-h-[230px] flex-col rounded-[1.8rem] border-2 p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg ${
+          cardStyles[card.id] || "border-blue-200 bg-white"
+        }`}
+      >
+        <div
+          className="mb-4 inline-flex w-fit items-center justify-center rounded-2xl
+                     border border-amber-300 bg-gradient-to-b from-blue-500 to-blue-800
+                     px-5 py-3 text-xl font-black text-white shadow-lg"
+        >
+          {badges[card.id] || index + 1}
         </div>
-        <div className="concept-simple-grid">
-          {conceptCards.map((card) => (
-            <button key={card.id} onClick={() => setSelectedConcept(card.id)} className={`concept-simple-button concept-simple-${card.id}`}>
-              <span>{card.title}</span>
-              <ChevronRight className="h-7 w-7" />
-            </button>
-          ))}
-        </div>
+
+        <h3 className="text-2xl font-black text-blue-950">
+          {card.title}
+        </h3>
+
+        <p className="mt-3 flex-1 text-sm font-bold leading-7 text-slate-600">
+          {descriptions[card.id] ||
+            "개념의 핵심 내용을 확인하고 탐구 활동을 진행해요."}
+        </p>
+
+        <button
+          type="button"
+          onClick={() => setSelectedConcept(card.id)}
+          className="quest-button mt-5 flex w-full items-center justify-center gap-2
+                     rounded-2xl px-5 py-4 text-base font-black"
+        >
+          학습하기
+          <ChevronRight className="h-5 w-5" />
+        </button>
+      </div>
+    );
+  })}
+</div>
       </Card>
     );
   }
 
   const currentMeta = conceptQuestMeta[selectedConcept] || conceptQuestMeta.orderedPair;
+
+  const conceptMissionKey = `concept-${selectedConcept}`;
 
   return (
     <Card className="concept-quest-detail h-full overflow-hidden p-5">
@@ -2808,14 +2872,20 @@ function ConceptScreen({ selectedConcept, setSelectedConcept, completeMission, i
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <MissionStatusBadge done={isMissionComplete("concept")} />
-          <button
-            onClick={() => completeMission("concept", 20)}
-            disabled={isMissionComplete("concept")}
-            className="quest-complete-button rounded-2xl px-4 py-3 text-sm font-black disabled:opacity-60"
-          >
-            {isMissionComplete("concept") ? "완료됨" : "개념학습 완료 +20P"}
-          </button>
+          <MissionStatusBadge
+  done={isMissionComplete(conceptMissionKey)}
+/>
+
+<button
+  type="button"
+  onClick={() => completeMission(conceptMissionKey, 20)}
+  disabled={isMissionComplete(conceptMissionKey)}
+  className="quest-complete-button rounded-2xl px-4 py-3 text-sm font-black disabled:cursor-default disabled:opacity-60"
+>
+  {isMissionComplete(conceptMissionKey)
+    ? "✓ 학습 완료"
+    : "개념학습 완료 +20P"}
+</button>
           <div className="concept-expression-badge">{lesson.expression}</div>
         </div>
       </div>
